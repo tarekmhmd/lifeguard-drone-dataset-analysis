@@ -1,0 +1,11 @@
+# Required dependencies for the python_scripts/ scripts.
+# Python 3.11 recommended (developed on 3.11.4).
+
+# Core ML stack
+ultralytics>=8.4          # YOLO training/validation/inference (train_yolo11n_30ep, dataset_inspection)
+torch>=2.0                # must be a CUDA build for GPU training/validation
+numpy>=1.24
+pyyaml>=6.0
+
+# Imaging (03_image_augmentation)
+opencv-python>=4.8
