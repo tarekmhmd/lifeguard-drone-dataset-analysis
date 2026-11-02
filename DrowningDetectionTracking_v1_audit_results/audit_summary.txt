@@ -1,0 +1,55 @@
+Forensic Audit Summary — DrowningDetectionTracking_v1
+Date: 2026-11-02
+Scope: local package only; original archives read-only.
+
+OVERALL VERDICT: CLEAN AND RE-EVALUATE
+
+Counts:
+- Images: 23,586 (train 21,369; valid 1,215; test 1,002)
+- Labels: 23,586
+- Valid detection boxes: 49,040
+- Empty labels: 1 (test)
+- Malformed annotation lines: 15 (all train; 15 files; 6 files contain only malformed lines)
+- Large boxes >90% image area: 67 (train 60; valid 5; test 2)
+- Missing labels: 0
+- Orphan labels: 0
+- Corrupt/zero-byte images: 0
+- Unsupported image formats: 0
+- All images: 640x640
+
+Class schema:
+- nc=7; names: '3','4','5','6','Out of Water','drowning','swimming'
+- Numeric-only images: train 9,792; valid 570; test 436
+- Semantic-only images: train 10,968; valid 600; test 540
+- Mixed images: train 603; valid 45; test 25
+- Classes 0-3: 23,238 boxes (47.4%); classes 4-6: 25,802 boxes (52.6%)
+- Semantic meanings of numeric classes are undocumented.
+
+Leakage:
+- Exact cross-split image hash groups: 99 (365 files) — confirmed leakage
+- Exact cross-split label hash groups: 173 (702 files) — confirmed duplication
+- Same source-prefix groups across splits: 685 (12,667 files) — suspected temporal/source contamination
+- Same image/label filenames across splits: 0
+
+YAML/package:
+- data.yaml: MISSING
+- data.fixed.yaml: present; nc=7; split paths valid; absolute 'path' points to Colab, invalid locally
+- ZIPs contain both images and labels; names differ from expected *_labels.zip
+- ZIP integrity: all pass testzip; no duplicate entries
+
+Suitability:
+- Swimmer detection: KEEP WITH LIMITATIONS after cleaning
+- Drowning detection: SUPPLEMENT / NOT APPROVED as-is; semantics unverified
+- Temporal distress: SUPPLEMENT; no temporal labels or track IDs
+- Multi-object tracking: SUPPLEMENT; no track IDs; detection pretraining only
+
+Critical fixes:
+1. Repair/quarantine 15 malformed lines and 6 only-invalid label files.
+2. Document or remove numeric classes 0-3.
+3. Review/repair 67 large/full-frame boxes.
+4. Repair train/valid/test leakage using hashes and source prefixes.
+5. Restore/validate data.yaml and remove the invalid absolute path.
+6. Visually verify all class samples and the empty-label image.
+7. Supplement validated drowning and temporal/tracking data before safety-critical use.
+
+Visual verification by the auditor: NOT COMPLETED (contact sheets generated for human review).

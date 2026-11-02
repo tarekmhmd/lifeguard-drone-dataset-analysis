@@ -1,0 +1,4 @@
+split,images,labels,unsupported_files,missing_labels,orphan_labels,duplicate_image_stems,duplicate_label_stems,empty_labels,invalid_lines,invalid_class_ids,invalid_coordinates,out_of_bounds_boxes,duplicate_annotation_lines,tiny_boxes,large_boxes,read_errors
+train,21369,21369,0,0,0,0,0,0,15,0,0,0,0,0,60,0
+valid,1215,1215,0,0,0,0,0,0,0,0,0,0,0,0,5,0
+test,1002,1002,0,0,0,0,0,1,0,0,0,0,0,0,2,0

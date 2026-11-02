@@ -1,0 +1,154 @@
+{
+  "zips": {
+    "train": {
+      "file": "train-20261102T163226Z-1-001.zip",
+      "testzip": null,
+      "files": 42738,
+      "txt": 21369,
+      "images": 21369,
+      "unsupported": 0,
+      "duplicate_entries": 0,
+      "dirs": {
+        "train/labels": 21369,
+        "train/images": 21369
+      }
+    },
+    "valid": {
+      "file": "valid-20261102T163228Z-1-001.zip",
+      "testzip": null,
+      "files": 2430,
+      "txt": 1215,
+      "images": 1215,
+      "unsupported": 0,
+      "duplicate_entries": 0,
+      "dirs": {
+        "valid/images": 1215,
+        "valid/labels": 1215
+      }
+    },
+    "test": {
+      "file": "test-20261102T163222Z-1-001.zip",
+      "testzip": null,
+      "files": 2004,
+      "txt": 1002,
+      "images": 1002,
+      "unsupported": 0,
+      "duplicate_entries": 0,
+      "dirs": {
+        "test/images": 1002,
+        "test/labels": 1002
+      }
+    }
+  },
+  "splits": {
+    "train": {
+      "images": 21369,
+      "labels": 21369,
+      "unsupported": 0,
+      "empty": 0,
+      "invalid_lines": 15,
+      "invalid_class": 0,
+      "invalid_coords": 0,
+      "oob": 0,
+      "duplicate_lines": 0,
+      "tiny": 0,
+      "large": 60,
+      "missing_labels": 0,
+      "orphan_labels": 0,
+      "duplicate_image_stems": 0,
+      "duplicate_label_stems": 0,
+      "class_boxes": {
+        "6": 10098,
+        "4": 7375,
+        "5": 4123,
+        "0": 9032,
+        "3": 8773,
+        "1": 4111,
+        "2": 1322
+      },
+      "class_images": {
+        "6": 4234,
+        "4": 6978,
+        "5": 2434,
+        "0": 7856,
+        "3": 4218,
+        "1": 342,
+        "2": 850
+      },
+      "read_errors": 0
+    },
+    "valid": {
+      "images": 1215,
+      "labels": 1215,
+      "unsupported": 0,
+      "empty": 0,
+      "invalid_lines": 0,
+      "invalid_class": 0,
+      "invalid_coords": 0,
+      "oob": 0,
+      "duplicate_lines": 0,
+      "tiny": 0,
+      "large": 5,
+      "missing_labels": 0,
+      "orphan_labels": 0,
+      "duplicate_image_stems": 0,
+      "duplicate_label_stems": 0,
+      "class_boxes": {
+        "4": 387,
+        "5": 172,
+        "6": 441,
+        "3": 583,
+        "0": 546,
+        "2": 84,
+        "1": 442
+      },
+      "class_images": {
+        "4": 384,
+        "5": 113,
+        "6": 186,
+        "3": 276,
+        "0": 466,
+        "2": 54,
+        "1": 19
+      },
+      "read_errors": 0
+    },
+    "test": {
+      "images": 1002,
+      "labels": 1002,
+      "unsupported": 0,
+      "empty": 1,
+      "invalid_lines": 0,
+      "invalid_class": 0,
+      "invalid_coords": 0,
+      "oob": 0,
+      "duplicate_lines": 0,
+      "tiny": 0,
+      "large": 2,
+      "missing_labels": 0,
+      "orphan_labels": 0,
+      "duplicate_image_stems": 0,
+      "duplicate_label_stems": 0,
+      "class_boxes": {
+        "4": 398,
+        "5": 114,
+        "6": 198,
+        "3": 373,
+        "0": 312,
+        "2": 26,
+        "1": 130
+      },
+      "class_images": {
+        "4": 388,
+        "5": 103,
+        "6": 91,
+        "3": 243,
+        "0": 275,
+        "2": 16,
+        "1": 9
+      },
+      "read_errors": 0
+    }
+  },
+  "classes": {}
+}

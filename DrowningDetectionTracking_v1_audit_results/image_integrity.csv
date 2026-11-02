@@ -1,0 +1,4 @@
+split,images,decoded,corrupt,zero_byte,unsupported,size_640x640,other_sizes,aspect_min,aspect_max,missing_labels,orphan_labels,duplicate_image_stems,duplicate_label_stems
+train,21369,21369,0,0,0,21369,{},1.0,1.0,0,0,0,0
+valid,1215,1215,0,0,0,1215,{},1.0,1.0,0,0,0,0
+test,1002,1002,0,0,0,1002,{},1.0,1.0,0,0,0,0
