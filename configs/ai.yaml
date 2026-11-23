@@ -1,0 +1,7 @@
+# Member 1 configuration. Phase 1 supports only the mock engine.
+engine: mock
+mock:
+  fixture_path: ../tests/fixtures/synthetic/submersion_seed0.jsonl
+  on_exhausted: empty
+# Model registry (M2-12): the fixture above must be registered with a matching sha256.
+model_registry: ../models/registry.yaml

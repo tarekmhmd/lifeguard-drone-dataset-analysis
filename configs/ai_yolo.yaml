@@ -1,0 +1,16 @@
+# Member 1 configuration for the REAL engine (example). Requires: pip install -e ".[vision]"
+# and a local weights file. COCO-pretrained YOLO11n detects people in general; it is NOT validated on
+# pool video, and no pool-trained weights exist yet (roadmap P4-7). Weights are never downloaded implicitly.
+engine: yolo
+yolo:
+  weights: ../models/yolo11n.pt   # place the file here yourself (*.pt is git-ignored)
+  conf: 0.1                       # low on purpose: ByteTrack's second stage uses low-confidence boxes
+  iou: 0.7
+  imgsz: 640
+  device: null                    # "0" for the first GPU, "cpu", or null for the Ultralytics default
+  person_class_id: 0              # COCO "person"
+behavior: none                    # "rules" enables the unvalidated rules baseline (risk weight stays 0)
+# Model registry (M2-12): the weights must be registered with their sha256 before the system will start
+# (python -m lifeguard.common.models hash models/yolo11n.pt, then add an entry). Alternatively replace
+# "weights:" with "model: <registry name>".
+model_registry: ../models/registry.yaml

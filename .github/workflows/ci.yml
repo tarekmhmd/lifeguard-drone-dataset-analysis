@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python-version: ["3.11"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      - name: Ruff
+        run: python -m ruff check src tests
+
+      - name: Pytest
+        run: python -m pytest
+
+      - name: Fixture drift check
+        run: python -m lifeguard.ai.sim.generate_fixtures --out tests/fixtures/synthetic --check
+
+      - name: Mock replay
+        run: python -m lifeguard.app.replay_mock --ai-config configs/ai.yaml --system-config configs/system.yaml

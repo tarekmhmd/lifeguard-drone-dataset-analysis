@@ -2,3 +2,18 @@
 # Python generated files
 __pycache__/
 *.py[cod]
+
+# Phase 1 additions (SPEC 9.3)
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+runs/
+*.pt
+*.onnx
+*.engine
+*.mp4
+*.avi
+*.mov
+events/

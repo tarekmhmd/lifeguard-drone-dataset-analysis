@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-lifeguard"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["pydantic>=2.6,<3", "numpy>=1.24", "PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+# Real detector (roadmap P4-3). Ultralytics is AGPL-3.0: see docs/ROADMAP.md OD-7.
+vision = ["ultralytics>=8.4", "opencv-python>=4.8"]
+# Operator dashboard (batch 11).
+dashboard = ["streamlit>=1.50", "opencv-python>=4.8"]
+# MAVLink executor for a local ArduPilot SITL (batch 12). SIMULATION ONLY.
+drone = ["pymavlink>=2.4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+src = ["src", "tests"]
