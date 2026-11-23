@@ -1,0 +1,2 @@
+event_id,session_id,video_file,type,t_onset,t_end,track_uid,pool_x,pool_y
+submersion_seed0_evt1,submersion_seed0,,submersion,20.0,,cam_sim:submersion_seed0:1,15.708,7.368

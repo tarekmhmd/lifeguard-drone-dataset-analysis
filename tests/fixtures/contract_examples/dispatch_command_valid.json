@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0.0",
+  "event_id": "evt_2026-12-10_s03_001",
+  "track_uid": "cam_north:2026-12-10_s03:2",
+  "target_pool_xy": [12.0, 6.0],
+  "confirmed_by": "lifeguard_ahmed",
+  "t_utc": "2026-12-10T12:00:10.000Z"
+}

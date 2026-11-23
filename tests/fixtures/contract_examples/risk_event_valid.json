@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0.0",
+  "event_id": "evt_2026-12-10_s03_001",
+  "cam_id": "cam_north",
+  "session_id": "2026-12-10_s03",
+  "track_uid": "cam_north:2026-12-10_s03:2",
+  "from_level": "WATCH",
+  "to_level": "PRE_ALERT",
+  "risk": 0.72,
+  "reason": "RISK_ABOVE_THRESHOLD",
+  "pool_xy": [12.0, 6.0],
+  "t_capture": 1234.5,
+  "t_utc": "2026-12-10T12:00:00.123Z",
+  "t_media": 4.2,
+  "clip_path": "clips/evt_001.mp4",
+  "snapshot_path": "snapshots/evt_001.jpg"
+}

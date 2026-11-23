@@ -1,0 +1,12 @@
+{
+  "schema_version": "2.0.0",
+  "cam_id": "cam_north",
+  "session_id": "2026-12-10_s03",
+  "frame_idx": 0,
+  "t_capture": 100.0,
+  "t_utc": "2026-12-10T12:00:00.000Z",
+  "frame_width": 1920,
+  "frame_height": 1080,
+  "latency_ms": 12.5,
+  "tracks": []
+}

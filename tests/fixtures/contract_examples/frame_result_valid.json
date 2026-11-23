@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0.0",
+  "cam_id": "cam_north",
+  "session_id": "2026-12-10_s03",
+  "frame_idx": 42,
+  "t_capture": 1234.5,
+  "t_utc": "2026-12-10T12:00:00.123Z",
+  "t_media": 4.2,
+  "frame_width": 1920,
+  "frame_height": 1080,
+  "status": "ok",
+  "error": null,
+  "latency_ms": 12.5,
+  "tracks": [
+    {
+      "track_id": 1,
+      "track_uid": "cam_north:2026-12-10_s03:1",
+      "cls": "person",
+      "box_xyxy": [100.0, 200.0, 180.0, 320.0],
+      "det_conf": 0.87,
+      "state": "tracked",
+      "pool_xy": [5.0, 6.0],
+      "in_water": true,
+      "zone": "shallow",
+      "keypoints": [
+        [100.0, 200.0, 0.9], [101.0, 200.0, 0.9], [102.0, 200.0, 0.9],
+        [103.0, 200.0, 0.9], [104.0, 200.0, 0.9], [105.0, 200.0, 0.9],
+        [106.0, 200.0, 0.9], [107.0, 200.0, 0.9], [108.0, 200.0, 0.9],
+        [109.0, 200.0, 0.9], [110.0, 200.0, 0.9], [111.0, 200.0, 0.9],
+        [112.0, 200.0, 0.9], [113.0, 200.0, 0.9], [114.0, 200.0, 0.9],
+        [115.0, 200.0, 0.9], [116.0, 200.0, 0.9]
+      ],
+      "features": {"speed": 1.2, "depth": 0.4},
+      "behavior": {
+        "normal_swim": 0.7,
+        "idle": 0.1,
+        "play": 0.05,
+        "dive": 0.05,
+        "distress": 0.05,
+        "drowning": 0.05,
+        "model_version": "behavior_v1"
+      }
+    },
+    {
+      "track_id": 2,
+      "track_uid": "cam_north:2026-12-10_s03:2",
+      "cls": "person",
+      "box_xyxy": [400.0, 300.0, 460.0, 420.0],
+      "det_conf": 0.55,
+      "state": "lost",
+      "pool_xy": [12.0, 6.0],
+      "in_water": true,
+      "zone": "deep"
+    }
+  ],
+  "submersions": [
+    {
+      "track_uid": "cam_north:2026-12-10_s03:2",
+      "last_pool_xy": [12.0, 6.0],
+      "seconds_submerged": 2.5,
+      "since_t_capture": 1232.0
+    }
+  ],
+  "model_versions": {"engine": "mock", "fixture": "frame_result_valid.json"}
+}

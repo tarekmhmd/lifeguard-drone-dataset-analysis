@@ -1,0 +1,2 @@
+event_id,session_id,video_file,type,t_onset,t_end,track_uid,pool_x,pool_y
+distress_like_seed0_evt1,distress_like_seed0,,distress,20.0,90.0,cam_sim:distress_like_seed0:1,15.777,7.414

@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "cam_id": "cam_north",
+  "session_id": "2026-12-10_s03",
+  "frame_idx": 0,
+  "t_capture": 100.0,
+  "t_utc": "2026-12-10T12:00:00.000Z",
+  "frame_width": 1920,
+  "frame_height": 1080,
+  "latency_ms": 12.5,
+  "tracks": [
+    {
+      "track_id": 1,
+      "track_uid": "cam_north:2026-12-10_s03:99",
+      "cls": "person",
+      "box_xyxy": [100.0, 200.0, 180.0, 320.0],
+      "det_conf": 0.9,
+      "state": "tracked",
+      "pool_xy": [5.0, 6.0],
+      "in_water": true,
+      "zone": "shallow"
+    }
+  ]
+}
