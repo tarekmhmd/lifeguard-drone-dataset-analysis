@@ -1,0 +1,96 @@
+{
+  "spec_version": "1.0.0",
+  "producer": "lifeguard.ai.features.extractor.FeatureExtractor",
+  "status": "Implemented and unit-tested on synthetic tracks. Value ranges on real pool video are not yet measured (M1-03 last criterion).",
+  "window_s": 4.0,
+  "step_s": 0.5,
+  "min_span_s": 0.5,
+  "per_frame": true,
+  "notes": [
+    "Features are recomputed every processed frame over the last window_s seconds of the track's ring buffer and written to TrackObs.features.",
+    "step_s is the spacing at which training samples are taken from that stream (Blueprint M6: a vector every 0.5 s).",
+    "A feature is omitted from TrackObs.features when there is not enough data; it is never filled with a guess.",
+    "Features describe motion and visibility only. None of them, alone or together, is proof of distress or drowning."
+  ],
+  "features": [
+    {
+      "name": "speed_mps",
+      "unit": "m/s",
+      "definition": "Net pool displacement between the first and last visible in-water samples of the window divided by their time span.",
+      "inputs": ["TrackObs.pool_xy", "TrackObs.state", "TrackObs.in_water"],
+      "available_when": ">= 2 visible in-water samples spanning >= min_span_s",
+      "range": [0, null]
+    },
+    {
+      "name": "path_speed_mps",
+      "unit": "m/s",
+      "definition": "Length of the path through all visible in-water samples of the window divided by their time span.",
+      "inputs": ["TrackObs.pool_xy", "TrackObs.state", "TrackObs.in_water"],
+      "available_when": ">= 2 visible in-water samples spanning >= min_span_s",
+      "range": [0, null]
+    },
+    {
+      "name": "progress_ratio",
+      "unit": "1",
+      "definition": "Net displacement divided by path length; near 0 means moving in place, 1 means a straight line.",
+      "inputs": ["TrackObs.pool_xy"],
+      "available_when": "speed features available and path length > 0",
+      "range": [0, 1]
+    },
+    {
+      "name": "bob_std_norm",
+      "unit": "1 (fraction of box height)",
+      "definition": "Standard deviation of the box-centre image y over visible samples divided by the mean box height (vertical bobbing).",
+      "inputs": ["TrackObs.box_xyxy", "TrackObs.state"],
+      "available_when": ">= 3 visible samples",
+      "range": [0, null]
+    },
+    {
+      "name": "bob_freq_hz",
+      "unit": "Hz",
+      "definition": "Dominant frequency of the box-centre y oscillation: uniform resampling, mean removal, zero-padded real FFT, strongest non-DC bin.",
+      "inputs": ["TrackObs.box_xyxy", "TrackObs.state"],
+      "available_when": ">= 8 visible samples spanning >= 2 s, bob_std_norm >= 0.02, and at least one full cycle in the span",
+      "range": [0, null]
+    },
+    {
+      "name": "visibility_ratio",
+      "unit": "1",
+      "definition": "Fraction of window samples in which the track was visible (state tracked). Proxy for head visibility until a head detector exists.",
+      "inputs": ["TrackObs.state"],
+      "available_when": "always",
+      "range": [0, 1]
+    },
+    {
+      "name": "time_since_seen_s",
+      "unit": "s",
+      "definition": "Seconds since the track was last visible.",
+      "inputs": ["TrackObs.state", "FrameResult.t_capture"],
+      "available_when": "always",
+      "range": [0, null]
+    },
+    {
+      "name": "box_aspect",
+      "unit": "1",
+      "definition": "Current box height divided by width (coarse posture cue; not a verticality measurement).",
+      "inputs": ["TrackObs.box_xyxy"],
+      "available_when": "box width > 0",
+      "range": [0, null]
+    }
+  ],
+  "related_contract_fields": {
+    "zone": "TrackObs.zone (shallow / deep / edge) from PoolGeometry",
+    "submersion_s": "FrameResult.submersions[].seconds_submerged from the submersion monitor"
+  },
+  "model_vector": {
+    "layout": "values of features in the order above, then one presence flag (1/0) per feature",
+    "missing_value": 0.0,
+    "size": 16
+  },
+  "planned_not_implemented": [
+    {"name": "head_visible_ratio", "blocked_by": "needs a pool-trained head detector (M1-09/M1-10, data)"},
+    {"name": "body_verticality", "blocked_by": "needs pose keypoints; pose usefulness on pool video unverified (M1-06, data)"},
+    {"name": "arm_pattern", "blocked_by": "needs pose keypoints (M1-06, data)"},
+    {"name": "motion_energy", "blocked_by": "optical flow per track crop; deferred until the latency budget is measured on real video (I0.5)"}
+  ]
+}
