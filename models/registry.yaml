@@ -1,0 +1,62 @@
+# Model registry (MEMBER_2 M2-12). Every model file the runtime may load must be listed here with its
+# sha256; a missing entry, missing file or checksum mismatch refuses start-up with a SYSTEM FAULT.
+# Paths are relative to this file. Weights (*.pt, *.onnx, *.engine) are never committed to git.
+# Name convention: <task>_<arch>_<data>_v<n>.
+#
+# No trained or approved pool model exists yet (detector training M1-10 and the behaviour model M1-13 are
+# postponed). Until then only the MOCK fixtures below are registered, so the whole system stays testable.
+# To add a model: python -m lifeguard.common.models hash path/to/file   -> copy the sha256 into a new entry.
+#
+# Example (do not uncomment until the weights are approved and their checksum is recorded):
+# - name: detector_yolo11n_coco_v1
+#   version: 1.0.0
+#   kind: detector
+#   path: yolo11n_coco_v1.pt
+#   sha256: <64 hex characters>
+#   url: <official download URL>
+#   mock: false
+#   description: COCO-pretrained YOLO11n, person class only; NOT validated on pool video.
+registry_version: 1
+models:
+  - name: fixture_mock_submersion_v1
+    version: 1.0.0
+    kind: mock_fixture
+    path: ../tests/fixtures/synthetic/submersion_seed0.jsonl
+    sha256: a079868f7d963df0d6d33157eadf2c9a9f52e8c183b2ff08e2a0cd1b484a17cb
+    mock: true
+    description: MOCK perception output, synthetic submersion scenario (logic tests only)
+  - name: fixture_mock_normal-swim_v1
+    version: 1.0.0
+    kind: mock_fixture
+    path: ../tests/fixtures/synthetic/normal_swim_seed0.jsonl
+    sha256: 37c26ebeba7f2b6692c820013ab74c44944fea0cc651fedd0431796c789264aa
+    mock: true
+    description: MOCK perception output, synthetic normal swimming
+  - name: fixture_mock_idle_v1
+    version: 1.0.0
+    kind: mock_fixture
+    path: ../tests/fixtures/synthetic/idle_seed0.jsonl
+    sha256: 09d85c2b01286554c90b9b544d75677e2b569611bb3a13af2766eef2f3abe71f
+    mock: true
+    description: MOCK perception output, synthetic idle swimmer
+  - name: fixture_mock_dive_v1
+    version: 1.0.0
+    kind: mock_fixture
+    path: ../tests/fixtures/synthetic/dive_seed0.jsonl
+    sha256: e49149737da951a48682286391f13fb81951fd0e0400b6a0822c7233558f935c
+    mock: true
+    description: MOCK perception output, synthetic 3-6 s dive (hard negative)
+  - name: fixture_mock_edge-exit_v1
+    version: 1.0.0
+    kind: mock_fixture
+    path: ../tests/fixtures/synthetic/edge_exit_seed0.jsonl
+    sha256: 0a1358e08ef0e96c632c7b09162af217c71336cf91e857a7c87f9d841acdaeb5
+    mock: true
+    description: MOCK perception output, synthetic swimmer leaving at a ladder (hard negative)
+  - name: fixture_mock_distress-like_v1
+    version: 1.0.0
+    kind: mock_fixture
+    path: ../tests/fixtures/synthetic/distress_like_seed0.jsonl
+    sha256: 4269b4f14cf5223780a755e526f97e4f1c7a7823543cb730225836295661ff14
+    mock: true
+    description: MOCK perception output, synthetic distress-like motion
