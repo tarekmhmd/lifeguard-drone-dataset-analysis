@@ -1,0 +1,24 @@
+# CODEOWNERS TEMPLATE — not active. Decision D-04 (GitHub usernames) is still open.
+# When both usernames are known, replace @MEMBER_1 and @MEMBER_2 and copy this file to the repository root
+# as "CODEOWNERS". Never guess usernames.
+/src/lifeguard/contracts/   @MEMBER_1 @MEMBER_2
+/tests/contracts/           @MEMBER_1 @MEMBER_2
+/tests/integration/         @MEMBER_1 @MEMBER_2
+/docs/                      @MEMBER_1 @MEMBER_2
+/src/lifeguard/ai/          @MEMBER_1
+/tests/ai/                  @MEMBER_1
+/tests/fixtures/            @MEMBER_1
+/configs/ai.yaml            @MEMBER_1
+/configs/ai_yolo.yaml       @MEMBER_1
+/src/lifeguard/system/      @MEMBER_2
+/src/lifeguard/common/      @MEMBER_2
+/src/lifeguard/robotics/    @MEMBER_2
+/src/lifeguard/app/         @MEMBER_2
+/tests/system/              @MEMBER_2
+/tests/common/              @MEMBER_2
+/tests/app/                 @MEMBER_2
+/tests/robotics/            @MEMBER_2
+/configs/system.yaml        @MEMBER_2
+/models/registry.yaml       @MEMBER_1 @MEMBER_2
+/.github/                   @MEMBER_2
+/pyproject.toml             @MEMBER_1 @MEMBER_2
