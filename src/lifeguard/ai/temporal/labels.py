@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import itertools
 import json
 import math
 import sys
@@ -130,7 +131,7 @@ def read_intervals(path: Path | str) -> list[BehaviorInterval]:
         by_key.setdefault((iv.session_id, iv.track_id, iv.annotator), []).append(iv)
     for key, group in by_key.items():
         group.sort(key=lambda iv: iv.t_start)
-        for a, b in zip(group, group[1:], strict=False):
+        for a, b in itertools.pairwise(group):
             if b.t_start < a.t_end - _EPS:
                 raise ContractValidationError(f"overlapping intervals for {key}: {a.t_start}-{a.t_end} and "
                                               f"{b.t_start}-{b.t_end}", source=source)
@@ -159,7 +160,9 @@ class AgreementReport:
     confusion: dict[tuple[str, str], int]
 
     def line(self) -> str:
-        fmt = (lambda v: "na" if v is None else f"{v:.3f}")  # noqa: E731
+        def fmt(v: float | None) -> str:
+            return "na" if v is None else f"{v:.3f}"
+
         return f"points={self.n_points} agreement={fmt(self.percent)} kappa={fmt(self.kappa)}"
 
 
@@ -183,7 +186,7 @@ def agreement(a: Iterable[BehaviorInterval], b: Iterable[BehaviorInterval], step
         ia, ib = group_a[key], group_b[key]
         start = max(min(iv.t_start for iv in ia), min(iv.t_start for iv in ib))
         end = min(max(iv.t_end for iv in ia), max(iv.t_end for iv in ib))
-        for k in range(int(math.floor((end - start) / step_s + _EPS)) + 1 if end >= start else 0):
+        for k in range(math.floor((end - start) / step_s + _EPS) + 1 if end >= start else 0):
             t = start + k * step_s
             la, lb = _label_at(ia, t), _label_at(ib, t)
             if la is not None and lb is not None:
