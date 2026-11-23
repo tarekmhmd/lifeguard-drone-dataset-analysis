@@ -20,6 +20,10 @@ drone = ["pymavlink>=2.4"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"lifeguard.ai.features" = ["feature_spec.json"]
+"lifeguard.ai.temporal" = ["label_taxonomy.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"

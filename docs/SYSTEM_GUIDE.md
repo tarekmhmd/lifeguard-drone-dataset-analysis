@@ -76,6 +76,11 @@ in [`ROADMAP.md`](ROADMAP.md); the frozen data contract is `src/lifeguard/contra
 | MAVLink executor | `robotics.executors.mavlink` | SIMULATION (SITL only) | loopback endpoints only; never run against SITL here |
 | Runtime + CLI | `app.runtime`, `app.main` | REAL | recorded video, live camera, synthetic demo |
 | Dashboard | `app.dashboard`, `app.dashboard_controller` | REAL UI (`dashboard` extra) | buttons call the runtime |
+| Model registry (M2-12) | `common.models`, `models/registry.yaml` | REAL | sha256 per model; unregistered/missing/mismatched file → SYSTEM FAULT, no start; only MOCK fixtures registered so far |
+| Feature spec (M1-03) | `ai.features.spec`, `ai/features/feature_spec.json` | REAL | 8 features, 4 s window, 0.5 s step; drives the model input vector |
+| Behaviour labels (M1-04) | `ai.temporal.labels`, `label_taxonomy.json`, `docs/ai/annotation_guide.md` | REAL | interval CSV, validation, annotator agreement (kappa), interval-based training |
+| MOT export (M1-05 tooling) | `ai.tracking.mot` | REAL | TrackEval layout; metrics need annotated clips |
+| Milestone tests | `tests/integration/` | REAL tests | I0 (mock end to end), I3 (pure-Python drone simulation, not SITL) |
 
 ## 4. Safety behaviour (implemented and tested)
 
@@ -86,7 +91,9 @@ in [`ROADMAP.md`](ROADMAP.md); the frozen data contract is `src/lifeguard/contra
   never dispatches (decision D-03).
 - A `DispatchCommand` is created only from a lifeguard CONFIRM on an ALARM (`AlertService.acknowledge`).
 - All messages say "machine-generated alert, unconfirmed"; none claims a drowning was detected.
-- Health faults are raised with alarm priority ("watch the pool directly").
+- Health faults are raised with alarm priority ("watch the pool directly"). Perception faults after
+  `max_consecutive_engine_errors` (10) error frames in a row; fewer are reported as DEGRADED.
+- A model file that is not registered, missing, or fails its sha256 check stops start-up with a SYSTEM FAULT.
 - Drone: hover 1.5 m from the swimmer and from everyone else, inside the geofence, battery/link checks,
   one mission at a time, abort with RTL on dismissal; release waits for a human confirmation
   (`require_release_confirmation: true`); the MAVLink executor refuses any non-loopback endpoint.
@@ -102,8 +109,9 @@ in [`ROADMAP.md`](ROADMAP.md); the frozen data contract is `src/lifeguard/contra
 | `geometry` | calibration file or placeholder | `calibration null` → PLACEHOLDER rectangle |
 | `mission` | planner | home (-1, -1), stand-off 1.5 m, fence margin 2 m, ceiling 10 m, battery 40 % |
 | `response` | platform + drone executor | `platform none`; drone `executor simulated`, release needs confirmation |
-| `ai.yaml` | MOCK engine | submersion fixture |
-| `ai_yolo.yaml` | REAL engine | local weights path, `behavior: none` |
+| `ai.yaml` | MOCK engine | submersion fixture, `model_registry: ../models/registry.yaml` |
+| `ai_yolo.yaml` | REAL engine | local weights path (must be registered), `behavior: none` |
+| top level | engine error limit | `max_consecutive_engine_errors: 10` (watchdog SYSTEM FAULT threshold) |
 
 ## 6. Optional dependencies
 
@@ -137,6 +145,18 @@ python -m lifeguard.system.geometry.calibrate --site-id my_pool --length 25 --wi
 # Evaluate the risk engine against labels; train a behaviour model from real-engine frames
 python -m lifeguard.app.evaluate --frames frames.jsonl --truth events.csv --system-config configs/system.yaml
 python -m lifeguard.ai.temporal.train --frames s1.jsonl --truth s1.csv --frames s2.jsonl --truth s2.csv --cv --out models/behavior.json
+python -m lifeguard.ai.temporal.train --intervals --frames s1.jsonl --truth s1_labels.csv --frames s2.jsonl --truth s2_labels.csv --cv --out models/behavior.json
+
+# Labels: validate a file, measure agreement between two annotators
+python -m lifeguard.ai.temporal.labels validate s1_labels.csv
+python -m lifeguard.ai.temporal.labels agreement annotator_a.csv annotator_b.csv
+
+# Model registry: verify every entry, checksum a new file, fetch a registered URL (explicit only)
+python -m lifeguard.common.models verify
+python -m lifeguard.common.models hash models/yolo11n.pt
+
+# Tracking evaluation input (TrackEval MOTChallenge layout) from real-engine frames
+python -m lifeguard.ai.tracking.mot --frames run_frames.jsonl --root eval --seq pool_clip01 --fps 10
 ```
 
 Drone in simulation: set `response.platform: drone` (pure-Python simulator by default). For ArduPilot SITL

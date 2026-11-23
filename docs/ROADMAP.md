@@ -47,6 +47,7 @@ calibration.
 | 10 | P4-2 `system.geometry.calibrated` (normalised-DLT homography, validation, JSON) + `python -m lifeguard.system.geometry.calibrate`; `geometry:` block selects calibration or a labelled PLACEHOLDER | REAL; a real calibration needs a pool camera frame | Yes (agent run) |
 | 11 | P3-5 Streamlit dashboard `app.dashboard` + headless `app.dashboard_controller` (live view, tracks/risk, incidents with Confirm/Dismiss, response + release confirmation, health, history) | REAL UI (`dashboard` extra) | Yes (agent run) |
 | 12 | P6-2/P6-3 `robotics.executors`: `SimulatedExecutor` (pure Python, failsafes), `MavlinkExecutor` (ArduPilot SITL, loopback endpoints only, human-confirmed simulated release), `robotics.response.DroneResponse` | SIMULATION ONLY; MAVLink executor tested against a scripted fake connection, NOT against SITL | Yes (agent run, fake connection) |
+| 13 | Remaining software-only tasks from the official task lists: M2-12 model registry (`common.models`, `models/registry.yaml`, SYSTEM FAULT on integrity failure); M1-03 `feature_spec.json` + `bob_freq_hz`; M1-04 annotation guide, label taxonomy, interval CSV, annotator agreement, interval-based training; checklist N-consecutive-errors SYSTEM FAULT; MOT/TrackEval export (M1-05 tooling); milestone tests I0 and I3 (pure-Python simulation); CI dashboard job; `docs/index.md`; CODEOWNERS template | REAL software; no trained models, datasets or hardware involved | Yes (agent run, location `E:\lifeguardDron\lifeguard-system`) |
 
 ### 1.2 Verification recorded by the agent (2026-11-23)
 

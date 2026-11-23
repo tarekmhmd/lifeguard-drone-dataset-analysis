@@ -23,9 +23,10 @@ Repository areas:
 | Path | Contents |
 | --- | --- |
 | `src/lifeguard/` | Python package: `contracts` (frozen v1.0), `ai` (perception, tracking, behaviour), `system` (risk, alerts, health, recording, geometry, ingest, response), `robotics` (simulated drone), `app` (runtime, CLIs, dashboard) |
-| `tests/` | pytest suite, contract examples and generated synthetic fixtures |
-| `configs/` | `ai.yaml` (Member 1) and `system.yaml` (Member 2) |
-| `docs/` | Architecture and dataset decision reports; [`docs/ROADMAP.md`](docs/ROADMAP.md) plans Phase 2 onward |
+| `tests/` | pytest suite (unit, `integration/` milestone tests), contract examples and generated synthetic fixtures |
+| `configs/` | `ai.yaml` / `ai_yolo.yaml` (Member 1) and `system.yaml` (Member 2) |
+| `models/` | `registry.yaml`: every loadable model with its sha256 (weights themselves are never committed) |
+| `docs/` | [`SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md), [`index.md`](docs/index.md) (decisions, workflow, milestones), [`ai/annotation_guide.md`](docs/ai/annotation_guide.md), [`ROADMAP.md`](docs/ROADMAP.md), dataset decision reports |
 | `python_scripts/`, `notebooks/` | Dataset and training scripts (see `python_scripts/README.md`) |
 
 ## Phase 1 developer quickstart
