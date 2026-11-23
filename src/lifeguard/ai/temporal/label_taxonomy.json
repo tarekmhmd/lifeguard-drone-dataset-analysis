@@ -1,0 +1,120 @@
+{
+  "taxonomy_version": "1.0.0",
+  "guide": "docs/ai/annotation_guide.md",
+  "principles": [
+    "Label behaviour over time, never a single frame. Every interval must meet its label's minimum duration.",
+    "Every label is decided from observable criteria in the video, not from interpretation, intent or the outcome.",
+    "A detected person is not a drowning person. Raised arms alone, closeness of faces to the water alone, an unusual posture alone, or a submersion alone are NOT distress.",
+    "distress requires several distress criteria together for at least its minimum duration; otherwise use another label or 'uncertain'.",
+    "Staged distress is performed only by trained adult volunteers with lifeguards present; no scenario involves children.",
+    "When unsure, use 'uncertain'. Uncertain intervals are excluded from training and evaluation."
+  ],
+  "labels": [
+    {
+      "label": "normal_swim",
+      "contract_class": "normal_swim",
+      "min_duration_s": 2.0,
+      "summary": "Purposeful swimming with forward progress.",
+      "criteria": [
+        "Forward displacement is clearly visible over the interval (roughly >= 0.3 m/s or crossing lane markings).",
+        "A regular, repeating stroke and/or kick pattern is visible.",
+        "The head clears the water regularly to breathe (front crawl turns, breaststroke lifts, backstroke face up).",
+        "The body is closer to horizontal than vertical."
+      ],
+      "not_this_label_when": [
+        "Progress stops for more than 2 s: end the interval and label the next part separately.",
+        "Movement is splashing or play without progress: use 'play'."
+      ]
+    },
+    {
+      "label": "idle",
+      "contract_class": "idle",
+      "min_duration_s": 2.0,
+      "summary": "Calm presence in the water without swimming: standing, floating, resting at the wall, calm treading.",
+      "criteria": [
+        "Little or no displacement (roughly < 0.2 m/s).",
+        "The head is stably above the water; breathing is unhurried.",
+        "Movements are relaxed: looking around, talking, adjusting goggles, holding the wall or a float.",
+        "No repeated going under and coming up."
+      ],
+      "not_this_label_when": [
+        "The head repeatedly drops to the waterline while the body is vertical and arms press down: consider 'distress' only if its criteria are met, else 'uncertain'."
+      ]
+    },
+    {
+      "label": "play",
+      "contract_class": "play",
+      "min_duration_s": 1.0,
+      "summary": "Voluntary recreational activity that is not lap swimming: splashing, jumping, games, throwing, interacting with others.",
+      "criteria": [
+        "Energetic but controlled movement, often with other people or objects (ball, noodle).",
+        "Arms may be raised, waving or splashing; the person turns towards others, laughs or calls out.",
+        "Brief voluntary submersions followed by controlled resurfacing are part of the activity.",
+        "Movement direction changes often; there is no sustained forward progress."
+      ],
+      "not_this_label_when": [
+        "The person is alone, vertical, head at the waterline and arms pressing down repeatedly for >= 3 s: check the 'distress' criteria."
+      ]
+    },
+    {
+      "label": "dive",
+      "contract_class": "dive",
+      "min_duration_s": 0.5,
+      "summary": "Intentional entry or underwater movement: dive or jump in, surface dive, underwater swim, breath-hold game.",
+      "criteria": [
+        "The going-under is preceded by a deliberate action (push-off, tuck, jump, surface dive, breath taken).",
+        "Under water the person moves purposefully or holds still in a controlled way.",
+        "The person resurfaces under control (no gasping struggle) and resumes another activity.",
+        "The interval covers from the start of the deliberate action to resurfacing."
+      ],
+      "not_this_label_when": [
+        "No deliberate action before going under, or no resurfacing: do not guess; use 'uncertain' and record a submersion event if it is a staged submersion scenario."
+      ]
+    },
+    {
+      "label": "distress",
+      "contract_class": "distress",
+      "min_duration_s": 3.0,
+      "summary": "Instinctive-drowning-response-like behaviour (staged by trained adult volunteers).",
+      "criteria": [
+        "Head at or below the waterline for more than half of the interval, mouth at water level, head tilted back when it surfaces.",
+        "No forward progress.",
+        "Body vertical in the water, no effective kick.",
+        "Arms press down or extend laterally on the water surface (not waving overhead, not stroking).",
+        "No voluntary communication: does not call out or wave for help."
+      ],
+      "decision_rule": "Label 'distress' only when at least the first three criteria hold together for >= 3 s. One criterion alone is never enough.",
+      "not_this_label_when": [
+        "Raised or waving arms with the head well above water (signalling, play): use 'play' or 'idle'.",
+        "A submersion with controlled resurfacing: use 'dive'.",
+        "Calm floating or treading with the head clear: use 'idle'."
+      ]
+    },
+    {
+      "label": "uncertain",
+      "contract_class": null,
+      "min_duration_s": 0.5,
+      "summary": "The annotator cannot decide from the video (occlusion, glare, out of frame, conflicting cues).",
+      "criteria": ["Use whenever no other label's criteria are clearly met."],
+      "not_this_label_when": []
+    }
+  ],
+  "reserved_contract_classes": {
+    "drowning": "Contract class kept for compatibility. It is NEVER annotated in staged sessions (no real drowning is staged); real incidents are recorded as GroundTruthEvent rows of type 'drowning' by the safety officer."
+  },
+  "interval_csv": {
+    "columns": ["session_id", "video_file", "track_id", "t_start", "t_end", "label", "annotator", "notes"],
+    "time_base": "t_media seconds from the start of video_file (same clock as FrameResult.t_media)",
+    "track_id": "the track ID drawn by the system's overlay (run_video / dashboard) for this session; track_uid = cam_id:session_id:track_id"
+  },
+  "event_csv": {
+    "format": "contract GroundTruthEvent CSV (lifeguard.contracts.io.write_events_csv)",
+    "columns": ["event_id", "session_id", "video_file", "type", "t_onset", "t_end", "track_uid", "pool_x", "pool_y"],
+    "types": ["submersion", "distress", "drowning"]
+  },
+  "agreement": {
+    "second_annotator_fraction": 0.1,
+    "metric": "Cohen's kappa and percent agreement over a 0.5 s grid on the overlapping time of each (session, track)",
+    "target": "set by the team before labelling starts (open decision); report the value with the dataset"
+  }
+}
