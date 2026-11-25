@@ -82,7 +82,8 @@ def create_engine(
         iou=yolo.iou,
         imgsz=yolo.imgsz,
         device=yolo.device,
-        class_map={yolo.person_class_id: DetClass.PERSON},
+        class_map={class_id: DetClass.PERSON for class_id in yolo.class_ids},
+        distress_classes=yolo.distress_class_ids,
     )
     return RealPerceptionEngine(
         detector,

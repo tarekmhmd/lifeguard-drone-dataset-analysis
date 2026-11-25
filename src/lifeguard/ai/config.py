@@ -35,12 +35,35 @@ class YoloEngineConfig(BaseModel):
     imgsz: int = Field(640, ge=32)
     device: str | None = None
     person_class_id: int = Field(0, ge=0)        # COCO "person"
+    # Several model classes that are all people, e.g. a pool model with [swimming, drowning] -> [0, 1].
+    # When set it replaces ``person_class_id``. Every listed class becomes ``DetClass.PERSON``: the detector
+    # only localises people and never decides about drowning (the risk engine does).
+    person_class_ids: tuple[int, ...] | None = None
+    # Person classes whose confidence is a distress signal (Z5cc: [1] = drowning). Reported per track as the
+    # 2 s mean feature ``det_distress_2s``; the risk engine uses it only if ``detector_distress_threshold``
+    # is set, and only up to PRE_ALERT.
+    distress_class_ids: tuple[int, ...] = ()
 
     @model_validator(mode="after")
     def _one_source(self) -> YoloEngineConfig:
         if (self.weights is None) == (self.model is None):
             raise ValueError("yolo needs exactly one of 'weights' (path) or 'model' (registry name)")
         return self
+
+    @model_validator(mode="after")
+    def _class_ids_valid(self) -> YoloEngineConfig:
+        """Class lists must be valid; distress classes must also be person classes."""
+        ids = self.person_class_ids
+        if ids is not None and (not ids or min(ids) < 0 or len(set(ids)) != len(ids)):
+            raise ValueError("person_class_ids must be non-empty, distinct and >= 0")
+        if not set(self.distress_class_ids) <= set(self.class_ids):
+            raise ValueError("distress_class_ids must be a subset of the person class ids")
+        return self
+
+    @property
+    def class_ids(self) -> tuple[int, ...]:
+        """Model class indices mapped to ``DetClass.PERSON``."""
+        return self.person_class_ids if self.person_class_ids is not None else (self.person_class_id,)
 
 
 class AIConfig(BaseModel):

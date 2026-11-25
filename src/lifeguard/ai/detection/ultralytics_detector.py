@@ -40,6 +40,7 @@ class UltralyticsDetector(Detector):
         imgsz: int = 640,
         device: str | None = None,
         class_map: dict[int, DetClass] | None = None,
+        distress_classes: tuple[int, ...] = (),
     ) -> None:
         """Load the model.
 
@@ -50,6 +51,7 @@ class UltralyticsDetector(Detector):
             imgsz: Inference image size.
             device: ``"0"``, ``"cpu"`` or None (Ultralytics default).
             class_map: Model class index -> contract class. Default ``{0: PERSON}`` (COCO).
+            distress_classes: Mapped model classes whose confidence is reported as ``Detection.distress``.
 
         Raises:
             ModelLoadError: If Ultralytics is not installed, the weights file is missing, or loading fails.
@@ -73,6 +75,11 @@ class UltralyticsDetector(Detector):
         self._imgsz = imgsz
         self._device = device
         self._class_map = dict(class_map) if class_map is not None else {0: DetClass.PERSON}
+        # NMS is per class by default. When several model classes map to the same contract class (e.g. a
+        # pool model's "swimming" and "drowning" both -> PERSON), one person can get one box per class and
+        # become two tracks, so suppress across classes instead.
+        self._agnostic_nms = len(set(self._class_map.values())) < len(self._class_map)
+        self._distress = frozenset(distress_classes)
         self._version = f"{path.name}:sha256:{_sha256(path)[:_HASH_PREFIX]}"
 
     @property
@@ -87,6 +94,7 @@ class UltralyticsDetector(Detector):
             imgsz=self._imgsz,
             device=self._device,
             classes=sorted(self._class_map),
+            agnostic_nms=self._agnostic_nms,
             verbose=False,
         )
         if not results:
@@ -102,7 +110,8 @@ class UltralyticsDetector(Detector):
             det_cls = self._class_map.get(int(cls))
             if det_cls is None:
                 continue
+            distress = float(conf) if int(cls) in self._distress else 0.0
             detections.append(
-                Detection((float(x1), float(y1), float(x2), float(y2)), float(conf), det_cls)
+                Detection((float(x1), float(y1), float(x2), float(y2)), float(conf), det_cls, distress)
             )
         return detections

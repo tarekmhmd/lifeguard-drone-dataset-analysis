@@ -1,0 +1,20 @@
+# Member 1 configuration for the REAL engine with the top-view ddt_v2 detector (high-mounted / overhead camera).
+# Requires: pip install -e ".[vision]" and the weights file below (*.pt is git-ignored).
+#
+# Model: YOLO11s fine-tuned on ddt_v2 (overhead / top-view pool images), classes
+# [swimming, drowning, out_of_water], imgsz 640, trained on train+valid. Held-out test split (217 images,
+# 52 drowning boxes, a small sample): mAP50 0.636; swimming AP50 0.845; drowning AP50 0.427,
+# precision 0.581, recall 0.462. Drowning labels were assigned by a named human reviewer (group review).
+# All classes map to PERSON; the drowning confidence feeds the risk engine like configs/ai_z5cc.yaml.
+engine: yolo
+yolo:
+  weights: ../models/ddt_v2_final.pt
+  conf: 0.1                       # low on purpose: ByteTrack's second stage uses low-confidence boxes
+  iou: 0.7
+  imgsz: 640                      # must match training
+  device: null
+  person_class_ids: [0, 1, 2]     # swimming, drowning, out_of_water -> PERSON
+  distress_class_ids: [1]         # "drowning" confidence -> per-track 2 s mean feature det_distress_2s
+behavior: none
+# Model registry (M2-12): the weights file must match its sha256 entry in models/registry.yaml.
+model_registry: ../models/registry.yaml

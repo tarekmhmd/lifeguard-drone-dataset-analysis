@@ -3,8 +3,8 @@
 # Paths are relative to this file. Weights (*.pt, *.onnx, *.engine) are never committed to git.
 # Name convention: <task>_<arch>_<data>_v<n>.
 #
-# No trained or approved pool model exists yet (detector training M1-10 and the behaviour model M1-13 are
-# postponed). Until then only the MOCK fixtures below are registered, so the whole system stays testable.
+# Pool detectors trained on 2026-11-24/25 are registered below (docs/MODEL_TRAINING_REPORT.md). The weights
+# are not committed: copy them into this folder before using configs/ai_z5cc.yaml or configs/ai_ddt.yaml.
 # To add a model: python -m lifeguard.common.models hash path/to/file   -> copy the sha256 into a new entry.
 #
 # Example (do not uncomment until the weights are approved and their checksum is recorded):
@@ -60,3 +60,17 @@ models:
     sha256: 4269b4f14cf5223780a755e526f97e4f1c7a7823543cb730225836295661ff14
     mock: true
     description: MOCK perception output, synthetic distress-like motion
+  - name: detector_yolo11s_z5cc_v1
+    version: 1.0.0
+    kind: detector
+    path: z5cc_s448_final.pt
+    sha256: 8136a671120f9133bc2213fdbe3a143d5a71b19ae46113d99f292ffa71355f97
+    mock: false
+    description: YOLO11s side-view pool detector (Z5cc, classes swimming/drowning, imgsz 448); held-out test mAP50 0.704; not validated on the team's own camera
+  - name: detector_yolo11s_ddt-v2_v1
+    version: 1.0.0
+    kind: detector
+    path: ddt_v2_final.pt
+    sha256: a6683aa3a2a0a4da5b56dc3839fd1a2cc1ee2cbb59ab023e3897f50abd1d5187
+    mock: false
+    description: YOLO11s overhead pool detector (ddt_v2, classes swimming/drowning/out_of_water, imgsz 640); held-out test mAP50 0.636; not validated on the team's own camera

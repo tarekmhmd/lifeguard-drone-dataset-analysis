@@ -16,6 +16,9 @@ class Detection:
     box_xyxy: tuple[float, float, float, float]
     conf: float
     cls: DetClass = DetClass.PERSON
+    # Confidence of a model "distress" class (e.g. Z5cc "drowning") for this box, 0.0 when the model
+    # predicted another class. A signal for the risk engine, never a decision by itself.
+    distress: float = 0.0
 
 
 class Detector(ABC):

@@ -30,6 +30,8 @@ risk:
   cooldown_s: 30.0
   track_timeout_s: 2.0
   pre_alert_ack_timeout_s: null   # open decision OD-1; null disables PRE_ALERT ack-timeout escalation
+  detector_distress_threshold: null  # e.g. 0.5 with configs/ai_z5cc.yaml: sustained detector "drowning"
+                                     # (2 s mean) -> PRE_ALERT, never ALARM; null disables it
 
 # Alert service (Blueprint M9). An unacknowledged ALARM is repeated; it never dispatches (D-03).
 alerts:

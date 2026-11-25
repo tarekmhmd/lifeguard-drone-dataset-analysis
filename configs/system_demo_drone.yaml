@@ -1,0 +1,90 @@
+# DEMO copy of system.yaml: SIMULATED drone response and the detector-distress PRE_ALERT rule enabled.
+# Member 2 configuration (Phase 1).
+cam_id: cam_sim
+session_id: null
+log_level: INFO
+log_file: null
+max_consecutive_engine_errors: 10
+latency_budget_ms: 100.0   # starting target from the work plan; to be measured in Phase 2
+
+# Risk engine (Blueprint M8). Starting values only: tune on real validation sessions (roadmap P8).
+risk:
+  t_sub_s: 10.0               # hard rule: submersion longer than this forces ALARM
+  tau_s: 1.5                  # EMA time constant of the risk score
+  window_s: 4.0               # evidence window
+  progress_ref_mps: 0.2       # net speed treated as "making progress"
+  min_progress_span_s: 1.0
+  weights:
+    submersion: 0.40
+    static: 0.25
+    visibility: 0.20
+    deep_zone: 0.15
+    behavior: 0.0             # temporal classifier; 0 until validated (roadmap P5-3)
+  t_watch: 0.4
+  t_pre_alert: 0.6
+  t_alarm: 0.8
+  hysteresis: 0.1
+  hold_watch_s: 1.0
+  hold_pre_alert_s: 2.0
+  hold_alarm_s: 2.0
+  hold_down_s: 3.0
+  cooldown_s: 30.0
+  track_timeout_s: 2.0
+  pre_alert_ack_timeout_s: null   # open decision OD-1; null disables PRE_ALERT ack-timeout escalation
+  detector_distress_threshold: 0.5   # DEMO: sustained detector "drowning" (2 s mean) -> PRE_ALERT, never ALARM
+
+# Alert service (Blueprint M9). An unacknowledged ALARM is repeated; it never dispatches (D-03).
+alerts:
+  realert_interval_s: 15.0
+  incident_db: null           # e.g. ../events/incidents.sqlite3 (events/ is git-ignored); null = in memory
+
+# Health watchdog (Blueprint M13). A fault is raised with the same priority as a drowning alarm.
+health:
+  camera_timeout_s: 3.0       # no frame for this long -> INGEST error
+  frozen_after_s: 3.0         # identical frames for this long -> INGEST error
+  fps_floor: 5.0              # processing rate below this -> PERCEPTION degraded
+  fps_window_s: 5.0
+  min_free_disk_mb: 1024.0
+
+# Alarm clips (Blueprint M9). null disables recording; e.g. ../events/clips (events/ is git-ignored).
+recording:
+  out_dir: null
+  pre_s: 10.0
+  post_s: 5.0
+  max_width: 640              # frames are down-scaled to bound memory
+  codec: mp4v
+
+# Drone mission planner (Blueprint M10). SIMULATION ONLY: no code path flies real hardware.
+mission:
+  home_pool_xy: [-1.0, -1.0]  # launch pad on the deck, pool metres
+  cruise_altitude_m: 6.0
+  hover_altitude_m: 3.0
+  max_altitude_m: 10.0
+  standoff_m: 1.5             # hover this far from the swimmer, never over them
+  fence_margin_m: 2.0         # geofence = pool rectangle grown by this margin
+  min_battery_pct: 40.0
+
+# Pool geometry. Without a calibration the runtime uses a PLACEHOLDER rectangle filling the central 80 %
+# of the image and says so in its startup report; positions and zones are then only approximate.
+geometry:
+  calibration: null           # e.g. pool_my_pool.json from: python -m lifeguard.system.geometry.calibrate
+  placeholder_length_m: 25.0
+  placeholder_width_m: 12.5
+
+# Response platform after a lifeguard CONFIRMs (open supervisor decision: drone / fixed camera / hybrid).
+# "none" = fixed-camera / alert-only: lifeguards respond in person. "drone" = SIMULATION ONLY.
+response:
+  platform: drone                  # DEMO: simulated drone response (no real aircraft)
+  drone:
+    executor: simulated              # "simulated" (pure Python) or "mavlink_sitl" (local ArduPilot SITL)
+    endpoint: udp:127.0.0.1:14550    # only local SITL endpoints are accepted; physical deployment disabled
+    heartbeat_timeout_s: 10.0
+    link_timeout_s: 3.0              # no heartbeat for this long -> failsafe RTL
+    rtl_battery_pct: 25.0
+    arrive_tolerance_m: 0.5
+    require_release_confirmation: true   # simulated release waits for a human confirmation
+    release_servo: 9
+    release_pwm: 1900
+    sim_speed_mps: 5.0
+    sim_vertical_mps: 2.0
+    sim_drain_pct_per_s: 0.2

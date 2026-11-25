@@ -41,6 +41,7 @@ class TrackedBox:
     state: TrackState
     first_seen_t: float
     last_seen_t: float
+    distress: float = 0.0   # Detection.distress of the last matched detection
 
 
 class _Track:
@@ -52,6 +53,7 @@ class _Track:
         self.box = det.box_xyxy
         self.conf = det.conf
         self.cls = det.cls
+        self.distress = det.distress
         self.status = _TENTATIVE
         self.hits = 1
         self.first_seen_t = t
@@ -186,6 +188,7 @@ class ByteTracker:
         trk.box = det.box_xyxy
         trk.conf = det.conf
         trk.cls = det.cls
+        trk.distress = det.distress
         trk.hits += 1
         trk.last_seen_t = t
         if trk.status == _LOST:
@@ -215,5 +218,6 @@ class ByteTracker:
                 state=state,
                 first_seen_t=trk.first_seen_t,
                 last_seen_t=trk.last_seen_t,
+                distress=trk.distress,
             ))
         return sorted(out, key=lambda b: b.track_id)

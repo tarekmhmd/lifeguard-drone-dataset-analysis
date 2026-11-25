@@ -15,6 +15,7 @@ import logging
 import math
 import re
 import time
+from collections import deque
 
 import numpy as np
 
@@ -28,7 +29,14 @@ from lifeguard.ai.tracking.config import TrackerConfig
 from lifeguard.contracts.enums import Status, TrackState
 from lifeguard.contracts.interfaces import PerceptionEngine, PoolGeometry
 from lifeguard.contracts.timeutil import UTC_PATTERN, utc_now
-from lifeguard.contracts.types import EngineHeartbeat, FrameResult, Submersion, TrackObs, make_track_uid
+from lifeguard.contracts.types import (
+    DISTRESS_FEATURE,
+    EngineHeartbeat,
+    FrameResult,
+    Submersion,
+    TrackObs,
+    make_track_uid,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +44,9 @@ _IDENT_PATTERN = re.compile(r"^[A-Za-z0-9_.\-]{1,64}$")
 _TRACKER_VERSION = "bytetrack_np_v1"
 _FEATURES_VERSION = "rules_v1"
 _FPS_SMOOTHING = 0.9
+# Detector distress evidence (``DISTRESS_FEATURE``): mean ``Detection.distress`` over this window.
+_DISTRESS_WINDOW_S = 2.0
+_DISTRESS_MIN_SPAN_S = 1.9   # the track must be this old before the mean is reported
 
 
 class RealPerceptionEngine(PerceptionEngine):
@@ -68,6 +79,7 @@ class RealPerceptionEngine(PerceptionEngine):
         feature_config = feature_config or FeatureConfig()
         self._monitor = SubmersionMonitor(geometry, feature_config)
         self._features = FeatureExtractor(feature_config)
+        self._distress: dict[int, deque[tuple[float, float]]] = {}
         self._frame_size: tuple[int, int] | None = None
         self._frames_processed = 0
         self._last_frame_idx: int | None = None
@@ -97,6 +109,7 @@ class RealPerceptionEngine(PerceptionEngine):
         self._tracker.reset()
         self._monitor.reset()
         self._features.reset()
+        self._distress.clear()
         if self._behavior is not None:
             self._behavior.reset()
         self._frame_size = None
@@ -146,6 +159,18 @@ class RealPerceptionEngine(PerceptionEngine):
         self._last_t_capture = t_capture
         return result
 
+    def _distress_mean(self, box: TrackedBox, t: float) -> float:
+        """Mean detector distress of the track over the last ``_DISTRESS_WINDOW_S`` (unmatched frames = 0)."""
+        window = self._distress.setdefault(box.track_id, deque())
+        # A frame without a matched detection counts as no distress evidence (conservative).
+        window.append((t, box.distress if box.state == TrackState.TRACKED else 0.0))
+        while window and window[0][0] < t - _DISTRESS_WINDOW_S:
+            window.popleft()
+        # Report only a full window: a mean over a track's first frames is a single-frame decision.
+        if box.first_seen_t > t - _DISTRESS_MIN_SPAN_S or not window:
+            return 0.0
+        return round(sum(v for _, v in window) / len(window), 4)
+
     # ----------------------------------------------------------------- pipeline
 
     def _run(
@@ -185,6 +210,7 @@ class RealPerceptionEngine(PerceptionEngine):
             features = self._features.observe(
                 box.track_id, t, box.state == TrackState.TRACKED, xy, in_water, clipped
             )
+            features[DISTRESS_FEATURE] = self._distress_mean(box, t)
             behavior = (
                 self._behavior.predict(box.track_id, features, in_water)
                 if self._behavior is not None
@@ -207,6 +233,8 @@ class RealPerceptionEngine(PerceptionEngine):
 
         live = {b.track_id for b in boxes} | {timer.track_id for timer in timers}
         self._features.forget(self._features.known_ids - live)
+        for gone in set(self._distress) - live:
+            del self._distress[gone]
 
         submersions = tuple(
             Submersion(
