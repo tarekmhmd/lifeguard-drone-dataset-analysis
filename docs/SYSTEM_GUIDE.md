@@ -1,7 +1,8 @@
 # System Guide — Autonomous AI Lifeguard System (pool only)
 
-Status date: 2026-11-23. This guide describes the code as it exists in this repository. Planning history is
-in [`ROADMAP.md`](ROADMAP.md); the frozen data contract is `src/lifeguard/contracts` (v1.0.0).
+Status date: 2026-11-25. This guide describes the code as it exists in this repository. Planning history is
+in [`ROADMAP.md`](ROADMAP.md); the pool detectors and how they were trained are in
+[`MODEL_TRAINING_REPORT.md`](MODEL_TRAINING_REPORT.md); the supervisor demo is in [`DEMO.md`](DEMO.md); the frozen data contract is `src/lifeguard/contracts` (v1.0.0).
 
 > Decision support only. The system raises *suspected* incidents for lifeguards to check; it never
 > declares a drowning and never acts physically on its own. Drone response is simulation only.
@@ -11,8 +12,8 @@ in [`ROADMAP.md`](ROADMAP.md); the frozen data contract is `src/lifeguard/contra
 | Level | Meaning | Status |
 | --- | --- | --- |
 | **A. Software complete and tested** | Every component implemented, unit/integration tests pass on CPU without weights, cameras or SITL | **Yes**: `python -m pytest` (see the ROADMAP progress table for the latest recorded run) |
-| **B. Hardware / simulator integration verified** | Real camera, ArduPilot SITL, real YOLO weights exercised end to end | **No.** Live-camera code tested with a fake capture; MAVLink executor tested against a scripted fake connection; YOLO detector never run here (no Ultralytics/weights installed) |
-| **C. AI validated on real pool recordings** | Detection, tracking, behaviour and alarm performance measured on labelled pool video | **No.** All accuracy-related tests use synthetic data; no labelled pool recordings exist in this repository |
+| **B. Hardware / simulator integration verified** | Real camera, ArduPilot SITL, real YOLO weights exercised end to end | **Partly.** The real engine runs end to end with the trained pool weights on a GTX 1650 (about 14 ms/frame, recorded video and dashboard). Live-camera code still tested only with a fake capture; MAVLink executor only against a scripted fake connection |
+| **C. AI validated on real pool recordings** | Detection, tracking, behaviour and alarm performance measured on labelled pool video | **Partly.** Both detectors are evaluated on held-out labelled internet pool videos (Z5cc test mAP50 0.704, ddt 0.636), and the early-warning rule on 12 test clips. Not yet on the team's own pool camera; tracking and false alarms per hour unmeasured |
 
 ## 2. Architecture and data flow
 
@@ -58,12 +59,12 @@ in [`ROADMAP.md`](ROADMAP.md); the frozen data contract is `src/lifeguard/contra
 | Data contract v1.0.0 | `lifeguard.contracts` | REAL (frozen) | unchanged since Phase 1 |
 | Mock perception | `ai.perception.mock_engine` | MOCK | replays synthetic fixtures |
 | Real perception | `ai.perception.real_engine` | REAL pipeline | accuracy unmeasured on pool video |
-| YOLO detector | `ai.detection.ultralytics_detector` | REAL, optional (`vision` extra) | not run in this environment; AGPL-3.0 (OD-7) |
+| YOLO detector | `ai.detection.ultralytics_detector` | REAL, optional (`vision` extra) | pool weights: Z5cc side-view, ddt overhead (`models/`, not committed); several classes → PERSON with class-agnostic NMS; reports the distress-class confidence; AGPL-3.0 (OD-7) |
 | Tracker | `ai.tracking.bytetrack` | REAL (NumPy) | greedy matching; lost tracks frozen in place |
-| Features + submersion timers | `ai.features` | REAL (rules) | 2.0 m re-association radius |
+| Features + submersion timers | `ai.features` | REAL (rules) | 2.0 m re-association radius; the real engine adds `det_distress_2s` (2 s mean of the detector's drowning confidence; not part of the feature spec) |
 | Behaviour: rules baseline | `ai.temporal.rules` | PLACEHOLDER baseline, unvalidated | off by default |
 | Behaviour: softmax model | `ai.temporal.softmax`, `train`, `cv` | REAL trainable code | no trained model exists (no labelled data) |
-| Risk engine | `system.risk` | REAL | thresholds are starting values; behaviour weight 0 |
+| Risk engine | `system.risk` | REAL | thresholds are starting values; behaviour weight 0; optional detector-distress rule → PRE_ALERT (`DETECTOR_DISTRESS`, never ALARM), off unless `detector_distress_threshold` is set |
 | Event evaluator | `system.eval`, `app.evaluate` | REAL | synthetic results are logic checks only |
 | Alerts + incident log | `system.alerts` | REAL | channels (siren, push) not built; dashboard shows them |
 | Health watchdog | `system.health` | REAL | camera loss, frozen video, low FPS, perception errors, disk |
@@ -87,6 +88,8 @@ in [`ROADMAP.md`](ROADMAP.md); the frozen data contract is `src/lifeguard/contra
 - A detection is never a drowning: alarms come only from the risk engine's temporal evidence and the hard
   submersion rule (submerged > `t_sub_s`, default 10 s). No single-frame rule exists.
 - The behaviour classifier's weight in the risk score is 0 until a model is validated on real sessions.
+- The detector's drowning class never raises an ALARM. Its 2 s mean can raise a PRE_ALERT ("check this
+  swimmer") only when `risk.detector_distress_threshold` is set; it is `null` in `configs/system.yaml`.
 - ALARM and DISPATCH are never cleared automatically; an unacknowledged ALARM is repeated every 15 s and
   never dispatches (decision D-03).
 - A `DispatchCommand` is created only from a lifeguard CONFIRM on an ALARM (`AlertService.acknowledge`).
@@ -110,7 +113,10 @@ in [`ROADMAP.md`](ROADMAP.md); the frozen data contract is `src/lifeguard/contra
 | `mission` | planner | home (-1, -1), stand-off 1.5 m, fence margin 2 m, ceiling 10 m, battery 40 % |
 | `response` | platform + drone executor | `platform none`; drone `executor simulated`, release needs confirmation |
 | `ai.yaml` | MOCK engine | submersion fixture, `model_registry: ../models/registry.yaml` |
-| `ai_yolo.yaml` | REAL engine | local weights path (must be registered), `behavior: none` |
+| `ai_yolo.yaml` | REAL engine, COCO YOLO11n | local weights path (must be registered), `behavior: none` |
+| `ai_z5cc.yaml` | REAL engine, **side-view pool detector** | `models/z5cc_s448_final.pt` (registered), imgsz 448, classes [0,1] → PERSON, distress class 1 |
+| `ai_ddt.yaml` | REAL engine, **overhead pool detector** | `models/ddt_v2_final.pt` (registered), imgsz 640, classes [0,1,2] → PERSON, distress class 1 |
+| `system_demo_drone.yaml` | DEMO copy of `system.yaml` | `response.platform: drone` (simulation), `detector_distress_threshold: 0.5` |
 | top level | engine error limit | `max_consecutive_engine_errors: 10` (watchdog SYSTEM FAULT threshold) |
 
 ## 6. Optional dependencies
@@ -166,8 +172,9 @@ calibration's pool → NED transform matches the vehicle's EKF origin.
 
 ## 8. What still needs real data, hardware or decisions
 
-- **Real data:** a pool person/head detector (P4-7); labelled pool sessions to train and validate the
-  behaviour model and to tune risk thresholds (P5-2, P8); annotated clips for tracking ID-switch tuning.
+- **Real data:** the pool detectors exist (P4-7 done); still needed: recordings from the team's own pool
+  camera to measure them in deployment, labelled pool sessions to train and validate the behaviour model
+  and to tune risk thresholds (P5-2, P8), and annotated clips for tracking ID-switch tuning.
 - **Hardware / simulator:** a pool camera (live mode, calibration frame); ArduPilot SITL for the MAVLink
   executor; no physical drone or release mechanism is supported.
 - **Supervisor / team decisions:** response platform (drone, fixed camera, hybrid); OD-1 PRE_ALERT

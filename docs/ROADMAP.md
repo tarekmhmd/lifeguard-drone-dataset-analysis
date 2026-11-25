@@ -1,6 +1,6 @@
 # Implementation Roadmap — Phase 2 onward
 
-Status date: 2026-11-23. Scope: **swimming pools only**. Drone response is **simulation only**.
+Status date: 2026-11-25 (pool detectors added, see [`MODEL_TRAINING_REPORT.md`](MODEL_TRAINING_REPORT.md)). Scope: **swimming pools only**. Drone response is **simulation only**.
 
 This roadmap is derived from the repository as it exists after Phase 1 and from the approved
 planning documents (Engineering Blueprint M1–M13, `PHASE_1_*` documents, `MEMBER_1/2_NEXT_TASKS.md`,
@@ -26,10 +26,11 @@ be completed until the named dataset exists and is approved.
 | Integration | `lifeguard.app.replay_mock` | MOCK pipeline | Mock engine end to end; no risk logic |
 | CI | `.github/workflows/ci.yml` | REAL | Windows + Ubuntu, Python 3.11 |
 
-Not present in this repository: any pool-trained detector (the only weights,
+Not present at the end of Phase 1: any pool-trained detector (the only weights,
 `weights/seadrones_yolo11n_30ep_v1/best.pt`, are aerial/open-water and out of scope), tracking,
 feature extraction, temporal classifier, risk engine, alerting, watchdog, drone code, real video ingest,
-calibration.
+calibration. All of these except a trained temporal classifier exist now (table 1.1); the pool detectors
+were trained on 2026-11-24/25 (batches 14–15).
 
 ### 1.1 Progress after Phase 1
 
@@ -48,6 +49,8 @@ calibration.
 | 11 | P3-5 Streamlit dashboard `app.dashboard` + headless `app.dashboard_controller` (live view, tracks/risk, incidents with Confirm/Dismiss, response + release confirmation, health, history) | REAL UI (`dashboard` extra) | Yes (agent run) |
 | 12 | P6-2/P6-3 `robotics.executors`: `SimulatedExecutor` (pure Python, failsafes), `MavlinkExecutor` (ArduPilot SITL, loopback endpoints only, human-confirmed simulated release), `robotics.response.DroneResponse` | SIMULATION ONLY; MAVLink executor tested against a scripted fake connection, NOT against SITL | Yes (agent run, fake connection) |
 | 13 | Remaining software-only tasks from the official task lists: M2-12 model registry (`common.models`, `models/registry.yaml`, SYSTEM FAULT on integrity failure); M1-03 `feature_spec.json` + `bob_freq_hz`; M1-04 annotation guide, label taxonomy, interval CSV, annotator agreement, interval-based training; checklist N-consecutive-errors SYSTEM FAULT; MOT/TrackEval export (M1-05 tooling); milestone tests I0 and I3 (pure-Python simulation); CI dashboard job; `docs/index.md`; CODEOWNERS template | REAL software; no trained models, datasets or hardware involved | Yes (agent run, location `E:\lifeguardDron\lifeguard-system`) |
+| 14 | **P4-7 pool detectors trained** (Colab T4, YOLO11s): **Z5cc** side-view (data audit, Z5cc_v2 cleaning, 4 runs; final on 49 videos: test mAP50 0.704, drowning AP50 0.649, recall 0.633) and **ddt** overhead (box audit, human-reviewed drowning triage of 1,466 quarantined images, ddt_v2 build, 3 runs; final test mAP50 0.636, drowning AP50 0.427, recall 0.462). Full record: [`MODEL_TRAINING_REPORT.md`](MODEL_TRAINING_REPORT.md) | REAL weights (not committed, registered in `models/registry.yaml`), configs `ai_z5cc.yaml`, `ai_ddt.yaml`; evaluated on held-out internet videos, NOT on the team's own pool camera | Yes: test-split evaluation in the training notebooks; detector run end to end on a GTX 1650 (about 14 ms/frame) |
+| 15 | Integration: `yolo.person_class_ids` + class-agnostic NMS; detector distress score carried to the per-track feature `det_distress_2s`; risk rule `detector_distress_threshold` → PRE_ALERT (`DETECTOR_DISTRESS`, never ALARM; off in `system.yaml`, 0.5 in `system_demo_drone.yaml`); dashboard path cleaning and config defaults from env vars; demo ([`DEMO.md`](DEMO.md)) | REAL; early-warning rule measured on 12 Z5cc test clips only (5/6 near-drowning caught, 0/6 false), window rules adjusted on those clips — evidence, not validation | Yes: full suite passed, ruff clean on this repository (agent run, 2026-11-26); dashboard demo checked in a browser |
 
 ### 1.2 Verification recorded by the agent (2026-11-23)
 
@@ -55,6 +58,9 @@ From batch 8 on, the agent ran the tests itself (authorised by the user). Final 
 report and reproduced by `python -m ruff check src tests` and `python -m pytest`. See
 [`SYSTEM_GUIDE.md`](SYSTEM_GUIDE.md) for the A/B/C verification levels: software tested (A) — yes;
 hardware/SITL (B) — no; AI validated on real pool recordings (C) — no.
+Update 2026-11-25: (B) partly — the YOLO detector now runs locally with real weights; camera and SITL still
+not exercised. (C) partly — both detectors are evaluated on held-out internet pool videos (not on the team's
+own camera), see [`MODEL_TRAINING_REPORT.md`](MODEL_TRAINING_REPORT.md).
 
 Batch 2 notes: the tracker uses greedy IoU assignment (no SciPy) and freezes lost tracks in place; the
 submersion re-association radius starts at 2.0 m (Blueprint: 1.5 m) to allow one frame of tracker
@@ -128,14 +134,14 @@ Heavy dependencies go into optional extras so the core install and CI stay small
 | P4-4 | Tracker (ByteTrack two-stage association, track buffer, `merged_from` on re-association within 1.5 m) | REAL | P4-3 | IDF1/HOTA measured on 3–5 annotated pool clips (DATA-BLOCKED for the metric, not for the code) | unit tests on synthetic detections |
 | P4-5 | Per-track features + submersion detector (M1-03/M6) filling `TrackObs.features` and `FrameResult.submersions` | REAL (rules) | P4-2, P4-4 | Reproduces the synthetic disappearance model exactly when fed synthetic detections | unit tests |
 | P4-6 | `RealPerceptionEngine` + factory `engine: yolo` (minor `AIConfig` extension) | REAL | P4-3..5 | Same `FrameResult` contract; `process()` never raises; heartbeat with fps/latency | contract tests reused |
-| P4-7 | Pool-specific detector fine-tune (M1-10) | REAL, **DATA-BLOCKED** | approved pool person/head dataset | Recall target on in-water people (target set by the team) on a source-split test set | evaluation report |
+| P4-7 | Pool-specific detector fine-tune (M1-10) — **DONE 2026-11-25** (Z5cc side-view, ddt overhead; [`MODEL_TRAINING_REPORT.md`](MODEL_TRAINING_REPORT.md)) | REAL | approved pool person/head dataset | Recall target on in-water people (target set by the team) on a source-split test set | evaluation report |
 
 ### Phase 5 — Temporal behaviour classifier (M7)
 
 | ID | Deliverable | Kind | Depends on | Acceptance criteria |
 | --- | --- | --- | --- | --- |
 | P5-1 | Window builder over P4-5 features | REAL | P4-5 | Deterministic windows from fixtures |
-| P5-2 | Baselines: rules-only → gradient-boosted trees → GRU/TCN producing `Behavior` | REAL, **DATA-BLOCKED** | staged pool sessions (P1b) | Leave-one-session-out results; beats rules-only on event recall |
+| P5-2 | Baselines: rules-only → gradient-boosted trees → GRU/TCN producing `Behavior` — detector-distress 2 s mean feeds a PRE_ALERT rule (batch 15); a softmax model trained on Z5cc clips (2026-11-25) was NOT adopted: more false alerts than the detector rule; needs calibrated full-frame sessions ([`TEMPORAL_PLAN.md`](TEMPORAL_PLAN.md) §8) | REAL, **DATA-BLOCKED** | staged pool sessions (P1b) | Leave-one-session-out results; beats rules-only on event recall |
 | P5-3 | Enable the risk engine's behaviour weight (currently 0) | config change | P5-2, P2-3 | Evaluator shows lower miss rate at equal or lower FA/h |
 
 ### Phase 6 — Drone response (simulation only)
@@ -174,7 +180,7 @@ P4-2 ─────────────┘        └─► P5-1 ─► P5-
 ```
 
 Can start now without data: P2-*, P3-1/2/4, P4-1..P4-6 (pretrained COCO), P6-1.
-Blocked on data or external setup: P4-7, P5-2, P6-2/3 (SITL environment), P8.
+Blocked on data or external setup: P5-2 (calibrated pool sessions), P6-2/3 (SITL environment), P8 (own pool recordings). P4-7 is done (2026-11-25).
 
 ---
 
@@ -198,5 +204,5 @@ Contract v1.0.0 stays frozen. Planned additions are **minor** versions owned as 
 | OD-5 | Branch for Phase 2 work (`main` vs `int/phase1-foundation`) | Work is uncommitted |
 | OD-6 | Latency budget and acceptable FA/h (O-04) | 100 ms placeholder in `system.yaml` |
 | OD-7 | Ultralytics (and its built-in trackers) is AGPL-3.0; publishing implications | Decide before P4-3 is merged |
-| OD-8 | Which pool dataset is approved for P4-7 and which staged-session protocol for P5-2 | See `dataset_recovery/` reports |
+| OD-8 | Which pool dataset is approved for P4-7 and which staged-session protocol for P5-2 | P4-7 used Z5cc (side view) and ddt_v2 (overhead), see `MODEL_TRAINING_REPORT.md`; supervisor approval of these datasets still to record; P5-2 protocol open |
 | OD-9 | `docs/SYSTEM_ARCHITECTURE.md` still shows the superseded 4-level FSM (O-06) | Left unchanged; this roadmap follows D-02 |

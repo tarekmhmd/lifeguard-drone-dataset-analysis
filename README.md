@@ -5,9 +5,11 @@ assessment → incidents and alerts for lifeguards → (optional, simulation-onl
 It raises suspected incidents for humans to check; it never declares a drowning and never acts
 physically on its own.
 
-**Status:** the software is complete and tested on CPU without cameras or model weights. It has
-not been verified with real cameras or ArduPilot SITL, and its AI has not been validated on labelled
-pool recordings. See [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md) for the architecture, what is
+**Status (2026-11-25):** the software is complete and tested. Two pool-trained YOLO11s detectors
+exist — side-view Z5cc (held-out test mAP50 0.704) and overhead ddt (0.636) — evaluated on held-out
+internet pool videos, not yet on the team's own camera; ArduPilot SITL and a real camera are not verified.
+Training and data work: [`docs/MODEL_TRAINING_REPORT.md`](docs/MODEL_TRAINING_REPORT.md); supervisor
+demo: [`docs/DEMO.md`](docs/DEMO.md). See [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md) for the architecture, what is
 real/mock/simulated, configuration and all commands, and [`docs/ROADMAP.md`](docs/ROADMAP.md) for
 history and open decisions.
 
@@ -24,9 +26,9 @@ Repository areas:
 | --- | --- |
 | `src/lifeguard/` | Python package: `contracts` (frozen v1.0), `ai` (perception, tracking, behaviour), `system` (risk, alerts, health, recording, geometry, ingest, response), `robotics` (simulated drone), `app` (runtime, CLIs, dashboard) |
 | `tests/` | pytest suite (unit, `integration/` milestone tests), contract examples and generated synthetic fixtures |
-| `configs/` | `ai.yaml` / `ai_yolo.yaml` (Member 1) and `system.yaml` (Member 2) |
+| `configs/` | `ai.yaml` (mock), `ai_yolo.yaml` (COCO), `ai_z5cc.yaml` / `ai_ddt.yaml` (pool detectors) (Member 1); `system.yaml`, `system_demo_drone.yaml` (demo) (Member 2) |
 | `models/` | `registry.yaml`: every loadable model with its sha256 (weights themselves are never committed) |
-| `docs/` | [`SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md), [`index.md`](docs/index.md) (decisions, workflow, milestones), [`ai/annotation_guide.md`](docs/ai/annotation_guide.md), [`ROADMAP.md`](docs/ROADMAP.md), dataset decision reports |
+| `docs/` | [`SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md), [`index.md`](docs/index.md) (decisions, workflow, milestones), [`ai/annotation_guide.md`](docs/ai/annotation_guide.md), [`ROADMAP.md`](docs/ROADMAP.md), [`MODEL_TRAINING_REPORT.md`](docs/MODEL_TRAINING_REPORT.md), [`DEMO.md`](docs/DEMO.md), [`TEMPORAL_PLAN.md`](docs/TEMPORAL_PLAN.md), dataset decision reports |
 | `python_scripts/`, `notebooks/` | Dataset and training scripts (see `python_scripts/README.md`) |
 
 ## Phase 1 developer quickstart
