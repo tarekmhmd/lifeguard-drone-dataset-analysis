@@ -2,3 +2,4 @@
 # Fixtures are compared byte for byte (generate_fixtures --check) and checksummed (models/registry.yaml):
 # never convert their line endings on checkout (Windows runners default to CRLF conversion).
 tests/fixtures/** -text
+models/*.pt filter=lfs diff=lfs merge=lfs -text
