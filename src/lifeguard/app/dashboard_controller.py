@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,6 +47,16 @@ class SourceChoice:
     kind: str                     # "synthetic" | "video" | "camera"
     value: str = ""               # video path or camera index / URL
     realtime: bool = True
+
+
+def clean_input(text: str) -> str:
+    """Normalise a typed or pasted path/source: drop invisible format characters and surrounding quotes.
+
+    Text copied from a right-to-left document (e.g. an Arabic PDF) often carries bidi marks such as
+    U+200E/U+200F/U+202A-U+202E, which make an existing file look missing.
+    """
+    visible = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
+    return visible.strip().strip('"').strip("'").strip()
 
 
 def annotate(frame: np.ndarray | None, result: FrameResult | None,

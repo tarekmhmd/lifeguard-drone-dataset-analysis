@@ -7,6 +7,7 @@ operator station). Alerts are machine-generated and unconfirmed; the operator de
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import streamlit as st
@@ -15,6 +16,7 @@ from lifeguard.app.dashboard_controller import (
     DashboardController,
     SourceChoice,
     annotate,
+    clean_input,
     health_rows,
     track_rows,
 )
@@ -33,8 +35,11 @@ def controller() -> DashboardController:
 
 def sidebar(ctl: DashboardController) -> None:
     st.sidebar.header("System")
-    ai_cfg = st.sidebar.text_input("AI config", str(ROOT / "configs" / "ai.yaml"))
-    sys_cfg = st.sidebar.text_input("System config", str(ROOT / "configs" / "system.yaml"))
+    # Defaults can be preset per launch (e.g. a demo): LIFEGUARD_AI_CONFIG / LIFEGUARD_SYSTEM_CONFIG.
+    ai_default = os.environ.get("LIFEGUARD_AI_CONFIG", str(ROOT / "configs" / "ai.yaml"))
+    sys_default = os.environ.get("LIFEGUARD_SYSTEM_CONFIG", str(ROOT / "configs" / "system.yaml"))
+    ai_cfg = st.sidebar.text_input("AI config", ai_default)
+    sys_cfg = st.sidebar.text_input("System config", sys_default)
     kind = st.sidebar.radio("Input", ["synthetic", "video", "camera"],
                             help="synthetic = MOCK engine replaying a fixture (no camera, no weights)")
     value = ""
@@ -45,7 +50,8 @@ def sidebar(ctl: DashboardController) -> None:
     realtime = st.sidebar.checkbox("Real-time pacing", value=True)
     start, stop = st.sidebar.columns(2)
     if start.button("Start", type="primary", disabled=ctl.running):
-        ctl.start(Path(ai_cfg), Path(sys_cfg), SourceChoice(kind, value, realtime))
+        ctl.start(Path(clean_input(ai_cfg)), Path(clean_input(sys_cfg)),
+                  SourceChoice(kind, clean_input(value), realtime))
     # Enabled while a session exists, also after a replay has ended (closes it and its incident log).
     if stop.button("Stop", disabled=ctl.runtime is None):
         ctl.stop()

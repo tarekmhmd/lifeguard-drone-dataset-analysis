@@ -101,3 +101,12 @@ def test_streamlit_page_start_and_confirm() -> None:
     assert any("ALARM -> DISPATCH" in i.value for i in at.info)
     next(b for b in at.sidebar.button if b.label == "Stop").click()
     at.run()
+
+
+def test_clean_input_strips_bidi_marks_quotes_and_spaces() -> None:
+    from lifeguard.app.dashboard_controller import clean_input
+
+    path = r"E:\lifeguardDron\demo\demo_11_drown_iVMA7GhSJjM.mp4"
+    pasted = "\u200f \u202a\"" + path + "\"\u202c\u200e "   # as copied from an Arabic PDF
+    assert clean_input(pasted) == path
+    assert clean_input("0") == "0"
