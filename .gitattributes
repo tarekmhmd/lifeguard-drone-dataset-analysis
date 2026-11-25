@@ -4,4 +4,4 @@
 tests/fixtures/** -text
 models/*.pt filter=lfs diff=lfs merge=lfs -text
 # Notebooks hold large outputs/images; keep them out of GitHub's language bar (files stay in the repo).
-*.ipynb linguist-documentation
+*.ipynb linguist-documentation linguist-vendored linguist-detectable=false
