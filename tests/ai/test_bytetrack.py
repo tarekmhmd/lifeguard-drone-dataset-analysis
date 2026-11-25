@@ -143,3 +143,13 @@ def test_tracker_config_validation() -> None:
         TrackerConfig(low_thresh=0.6, high_thresh=0.5)
     with pytest.raises(ValueError):
         TrackerConfig(lost_emit_s=10.0, track_buffer_s=5.0)
+
+
+def test_detector_distress_is_carried_to_the_track() -> None:
+    tracker = ByteTracker()
+    out: list[TrackedBox] = []
+    for i, distress in enumerate([0.2, 0.7, 0.9]):
+        det = Detection((100.0 + i, 100.0, 140.0 + i, 160.0), 0.9, distress=distress)
+        out = tracker.update([det], _t(i))
+    (box,) = out
+    assert box.distress == 0.9

@@ -44,8 +44,11 @@ def _ai_config(tmp_path: Path, fixture: Path, registry: Path) -> Path:
 
 def test_committed_registry_is_valid_and_all_mock_fixtures_verify() -> None:
     registry = ModelRegistry.load(REGISTRY)
-    assert registry.models and all(m.mock for m in registry.models)
-    assert dict(registry.report()) == {m.name: "ok" for m in registry.models}
+    report = dict(registry.report())
+    mocks = [m for m in registry.models if m.mock]
+    assert mocks and all(report[m.name] == "ok" for m in mocks)
+    # Real weights are never committed: on a clean checkout they are "missing", never a checksum MISMATCH.
+    assert all(report[m.name] in ("ok", "missing") for m in registry.models if not m.mock)
     assert registry.verify_file(FIXTURE).name == "fixture_mock_submersion_v1"
 
 

@@ -63,6 +63,10 @@ class RiskConfig(BaseModel):
     track_timeout_s: float = Field(2.0, gt=0.0)
     # Open decision OD-1: escalate an un-acknowledged PRE_ALERT to ALARM; null disables it.
     pre_alert_ack_timeout_s: Annotated[float, Field(gt=0.0)] | None = None
+    # Detector distress rule: when the perception feature ``det_distress_2s`` (mean confidence of the
+    # detector's distress class over 2 s, e.g. Z5cc "drowning") reaches this value, the track goes to at
+    # least PRE_ALERT ("please check this swimmer"). It never raises ALARM by itself. null disables it.
+    detector_distress_threshold: Annotated[float, Field(gt=0.0, le=1.0)] | None = None
 
     @model_validator(mode="after")
     def _ordered_thresholds(self) -> RiskConfig:

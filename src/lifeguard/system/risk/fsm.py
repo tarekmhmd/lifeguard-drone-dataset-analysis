@@ -54,10 +54,16 @@ class RiskFSM:
         self._since.clear()
         return transition
 
-    def step(self, t: float, risk: float, seconds_submerged: float) -> Transition | None:
-        """Advance the FSM with the smoothed risk and the current submersion time."""
+    def step(
+        self, t: float, risk: float, seconds_submerged: float, detector_distress: float = 0.0
+    ) -> Transition | None:
+        """Advance the FSM with the smoothed risk, the submersion time and the detector distress score."""
         cfg = self._config
         level = self.level
+        distress = (
+            cfg.detector_distress_threshold is not None
+            and detector_distress >= cfg.detector_distress_threshold
+        )
 
         if seconds_submerged > cfg.t_sub_s and level not in HELD_LEVELS:
             return self.go(RiskLevel.ALARM, RiskReason.SUBMERSION_TIMEOUT, t)
@@ -77,6 +83,9 @@ class RiskFSM:
         ):
             return self.go(RiskLevel.ALARM, RiskReason.ACK_TIMEOUT_ESCALATION, t)
 
+        if distress and level in (RiskLevel.NORMAL, RiskLevel.WATCH):
+            return self.go(RiskLevel.PRE_ALERT, RiskReason.DETECTOR_DISTRESS, t)
+
         if level == RiskLevel.NORMAL:
             if self._held("up", risk > cfg.t_watch, t, cfg.hold_watch_s):
                 return self.go(RiskLevel.WATCH, RiskReason.RISK_ABOVE_THRESHOLD, t)
@@ -88,7 +97,9 @@ class RiskFSM:
         elif level == RiskLevel.PRE_ALERT:
             if self._held("up", risk > cfg.t_alarm, t, cfg.hold_alarm_s):
                 return self.go(RiskLevel.ALARM, RiskReason.RISK_ABOVE_THRESHOLD, t)
-            if self._held("down", risk < cfg.t_pre_alert - cfg.hysteresis, t, cfg.hold_down_s):
+            # A PRE_ALERT is held while the detector distress persists (no flapping with the risk score).
+            low = risk < cfg.t_pre_alert - cfg.hysteresis and not distress
+            if self._held("down", low, t, cfg.hold_down_s):
                 return self.go(RiskLevel.WATCH, RiskReason.RISK_BELOW_THRESHOLD, t)
         return None
 

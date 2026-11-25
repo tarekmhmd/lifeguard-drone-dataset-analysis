@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from lifeguard.contracts.enums import AckDecision, RiskLevel, RiskReason, Status, TrackState, Zone
 from lifeguard.contracts.interfaces import RiskEngine
 from lifeguard.contracts.types import (
+    DISTRESS_FEATURE,
     Acknowledgement,
     FrameResult,
     RiskEvent,
@@ -116,7 +117,7 @@ class RuleBasedRiskEngine(RiskEngine):
                 tr.last_zone = obs.zone
 
             risk = tr.evidence.observe(obs)
-            transition = tr.fsm.step(t, risk, obs.seconds_submerged)
+            transition = tr.fsm.step(t, risk, obs.seconds_submerged, obs.detector_distress)
             if transition is not None:
                 reported = 1.0 if transition.reason == RiskReason.SUBMERSION_TIMEOUT else risk
                 events.append(self._emit(tr, transition, reported, t, fr.t_utc, fr.t_media))
@@ -139,6 +140,7 @@ class RuleBasedRiskEngine(RiskEngine):
                 zone=track.zone,
                 seconds_submerged=sub.seconds_submerged if sub is not None else 0.0,
                 behavior_score=_behavior_score(track),
+                detector_distress=track.features.get(DISTRESS_FEATURE, 0.0),
             )
         for uid, sub in submersions.items():
             if uid in observations:

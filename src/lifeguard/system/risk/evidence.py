@@ -25,6 +25,7 @@ class Observation:
     zone: Zone | None
     seconds_submerged: float = 0.0
     behavior_score: float = 0.0
+    detector_distress: float = 0.0
 
 
 @dataclass(frozen=True)

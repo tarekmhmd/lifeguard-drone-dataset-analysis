@@ -31,6 +31,7 @@ EXPECTED_VALUES: dict[type, list[str]] = {
         "INCIDENT_CLOSED",
         "COOLDOWN_ELAPSED",
         "TRACK_EXITED",
+        "DETECTOR_DISTRESS",
     ],
     AckDecision: ["confirm", "dismiss"],
     HealthComponent: [

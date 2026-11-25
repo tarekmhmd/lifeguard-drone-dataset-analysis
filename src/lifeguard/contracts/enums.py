@@ -57,6 +57,7 @@ class RiskReason(str, enum.Enum):
     INCIDENT_CLOSED = "INCIDENT_CLOSED"
     COOLDOWN_ELAPSED = "COOLDOWN_ELAPSED"
     TRACK_EXITED = "TRACK_EXITED"
+    DETECTOR_DISTRESS = "DETECTOR_DISTRESS"
 
 
 class AckDecision(str, enum.Enum):

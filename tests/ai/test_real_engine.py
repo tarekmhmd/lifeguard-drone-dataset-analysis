@@ -14,7 +14,7 @@ from lifeguard.contracts.enums import Status, TrackState
 from lifeguard.contracts.errors import ConfigError, ModelLoadError
 from lifeguard.contracts.interfaces import PerceptionEngine
 from lifeguard.contracts.timeutil import add_seconds_utc
-from lifeguard.contracts.types import FrameResult
+from lifeguard.contracts.types import DISTRESS_FEATURE, FrameResult
 from lifeguard.system.geometry.stub import StubPoolGeometry
 
 T0 = "2026-01-01T00:00:00.000Z"
@@ -149,6 +149,31 @@ def test_yolo_config_loads_and_resolves_weights(tmp_path: Path) -> None:
     assert cfg.tracker.min_hits == 2
 
 
+def test_yolo_default_class_ids_is_coco_person(tmp_path: Path) -> None:
+    cfg = load_ai_config(_write(tmp_path, "engine: yolo\nyolo:\n  weights: person.pt\n"))
+    assert cfg.yolo is not None and cfg.yolo.class_ids == (0,)
+
+
+def test_yolo_person_class_ids_replace_single_id(tmp_path: Path) -> None:
+    text = "engine: yolo\nyolo:\n  weights: z.pt\n  person_class_id: 5\n  person_class_ids: [0, 1]\n"
+    cfg = load_ai_config(_write(tmp_path, text))
+    assert cfg.yolo is not None and cfg.yolo.class_ids == (0, 1)
+
+
+@pytest.mark.parametrize("ids", ["[]", "[0, 0]", "[-1]"])
+def test_yolo_person_class_ids_rejects_invalid(tmp_path: Path, ids: str) -> None:
+    with pytest.raises(ConfigError):
+        load_ai_config(_write(tmp_path, f"engine: yolo\nyolo:\n  weights: z.pt\n  person_class_ids: {ids}\n"))
+
+
+def test_shipped_z5cc_config_loads() -> None:
+    path = Path(__file__).resolve().parents[2] / "configs" / "ai_z5cc.yaml"
+    cfg = load_ai_config(path)
+    assert cfg.yolo is not None
+    assert cfg.yolo.class_ids == (0, 1) and cfg.yolo.imgsz == 448
+    assert cfg.yolo.weights.name == "z5cc_s448_final.pt"
+
+
 def test_yolo_engine_requires_block(tmp_path: Path) -> None:
     with pytest.raises(ConfigError):
         load_ai_config(_write(tmp_path, "engine: yolo\n"))
@@ -165,3 +190,19 @@ def test_factory_yolo_missing_weights_is_model_load_error(tmp_path: Path) -> Non
     cfg = load_ai_config(_write(tmp_path, "engine: yolo\nyolo:\n  weights: absent.pt\n"))
     with pytest.raises(ModelLoadError):
         create_engine(cfg, "cam_a", "s1", geometry=GEO)
+
+
+def test_distress_feature_is_the_two_second_mean_of_matched_detections() -> None:
+    script = [[Detection(_box_at(10.0, 6.0), 0.9, distress=0.0 if i < 10 else 0.8)] for i in range(40)]
+    engine = RealPerceptionEngine(ScriptedDetector(script), GEO, "cam_a", "s1")
+    results = _run(engine, 40)
+    early = results[9].tracks[0].features[DISTRESS_FEATURE]
+    late = results[-1].tracks[0].features[DISTRESS_FEATURE]
+    assert early == 0.0
+    assert late == pytest.approx(0.8)          # the last 2 s are all distress detections
+
+
+def test_distress_class_ids_must_be_person_classes(tmp_path: Path) -> None:
+    text = "engine: yolo\nyolo:\n  weights: z.pt\n  person_class_ids: [0, 1]\n  distress_class_ids: [2]\n"
+    with pytest.raises(ConfigError):
+        load_ai_config(_write(tmp_path, text))

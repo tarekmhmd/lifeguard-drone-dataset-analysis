@@ -37,6 +37,9 @@ Ident = Annotated[str, Field(pattern=r"^[A-Za-z0-9_.\-]{1,64}$")]
 UtcStr = Annotated[str, Field(pattern=UTC_PATTERN)]
 SemVer = Annotated[str, Field(pattern=r"^\d+\.\d+\.\d+$")]
 FeatureName = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")]
+# ``TrackObs.features`` key: mean confidence of the detector's distress class over the last 2 s of the
+# track's matched detections (0.0 for detectors without a distress class). Read by the risk engine.
+DISTRESS_FEATURE: str = "det_distress_2s"
 
 
 def _check_version(value: str) -> str:
