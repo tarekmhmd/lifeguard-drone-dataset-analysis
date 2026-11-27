@@ -1,0 +1,4 @@
+model,frames,no_prediction,frames_ge3_confident_upper,latency_ms_median_per_person,frames_better_with_lr_swap,PCK@0.05_upper,PCK@0.1_upper,PCK@0.2_upper,PCK@0.05_all,PCK@0.1_all,PCK@0.2_all,PCK@0.05_upper_swaptol,PCK@0.1_upper_swaptol,PCK@0.2_upper_swaptol,PCK@0.05_all_swaptol,PCK@0.1_all_swaptol,PCK@0.2_all_swaptol
+pretrained,27,5,0.815,14.5,5,0.2,0.325,0.4,0.173,0.283,0.376,0.25,0.392,0.517,0.211,0.333,0.439
+distilled,27,0,0.741,18.9,5,0.225,0.417,0.617,0.173,0.321,0.519,0.25,0.442,0.667,0.181,0.333,0.553
+e1b,27,1,0.926,18.7,3,0.208,0.342,0.525,0.152,0.27,0.473,0.208,0.392,0.592,0.152,0.295,0.506

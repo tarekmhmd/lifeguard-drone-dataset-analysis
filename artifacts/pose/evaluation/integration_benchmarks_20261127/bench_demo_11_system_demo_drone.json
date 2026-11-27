@@ -1,0 +1,105 @@
+{
+ "video": "E:\\lifeguardDron\\demo\\demo_11_drown_iVMA7GhSJjM.mp4",
+ "frame_size": [
+  672,
+  672
+ ],
+ "video_fps": 30.0,
+ "off": {
+  "pose": false,
+  "frames": 600,
+  "errors": 0,
+  "latency_ms_mean": 19.2,
+  "latency_ms_p95": 24.8,
+  "processing_fps": 52.2,
+  "pose_ms_mean": null,
+  "pose_errors": 0,
+  "gpu_torch_peak_mb": 89.0,
+  "gpu_used_mb_after": 392.0,
+  "unique_tracks": 2,
+  "max_tracks_in_frame": 2,
+  "track_observations": 773,
+  "visible_observations": 669,
+  "observations_with_pose": 0,
+  "joint_share_ge_0.5": {
+   "nose": 0.0,
+   "l_eye": 0.0,
+   "r_eye": 0.0,
+   "l_ear": 0.0,
+   "r_ear": 0.0,
+   "l_shoulder": 0.0,
+   "r_shoulder": 0.0,
+   "l_elbow": 0.0,
+   "r_elbow": 0.0,
+   "l_wrist": 0.0,
+   "r_wrist": 0.0,
+   "l_hip": 0.0,
+   "r_hip": 0.0,
+   "l_knee": 0.0,
+   "r_knee": 0.0,
+   "l_ankle": 0.0,
+   "r_ankle": 0.0
+  },
+  "model_versions": {
+   "engine": "real",
+   "detector": "z5cc_s448_final.pt:sha256:8136a671120f",
+   "tracker": "bytetrack_np_v1",
+   "features": "rules_v1"
+  }
+ },
+ "on": {
+  "pose": true,
+  "frames": 600,
+  "errors": 0,
+  "latency_ms_mean": 42.6,
+  "latency_ms_p95": 50.1,
+  "processing_fps": 23.5,
+  "pose_ms_mean": 22.7,
+  "pose_errors": 0,
+  "gpu_torch_peak_mb": 164.0,
+  "gpu_used_mb_after": 478.0,
+  "unique_tracks": 2,
+  "max_tracks_in_frame": 2,
+  "track_observations": 773,
+  "visible_observations": 669,
+  "observations_with_pose": 310,
+  "joint_share_ge_0.5": {
+   "nose": 0.5,
+   "l_eye": 0.41,
+   "r_eye": 0.44,
+   "l_ear": 0.45,
+   "r_ear": 0.4,
+   "l_shoulder": 0.88,
+   "r_shoulder": 0.85,
+   "l_elbow": 0.42,
+   "r_elbow": 0.48,
+   "l_wrist": 0.32,
+   "r_wrist": 0.4,
+   "l_hip": 0.37,
+   "r_hip": 0.39,
+   "l_knee": 0.26,
+   "r_knee": 0.26,
+   "l_ankle": 0.21,
+   "r_ankle": 0.21
+  },
+  "model_versions": {
+   "engine": "real",
+   "detector": "z5cc_s448_final.pt:sha256:8136a671120f",
+   "tracker": "bytetrack_np_v1",
+   "features": "rules_v1",
+   "pose": "yolo11s-pose.pt:sha256:1060bda4a270"
+  }
+ },
+ "tracks_identical_off_vs_on": true,
+ "risk_events_identical_off_vs_on": true,
+ "risk_events": [
+  [
+   "cam_sim:bench:1",
+   "NORMAL",
+   "PRE_ALERT",
+   "DETECTOR_DISTRESS",
+   0.0,
+   1001.9
+  ]
+ ]
+}

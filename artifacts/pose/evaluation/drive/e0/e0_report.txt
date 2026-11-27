@@ -1,0 +1,15 @@
+E0 LABEL-FREE DIAGNOSTICS - consistency/agreement only, NOT accuracy
+frames 5613 (held-out 620, training-eligible 4993); runs >= 3 frames: 74; YOLO found no matching person in 788 frames
+thresholds: conf >= 0.5; agree <= 0.1; flip <= 0.1; jump <= 0.25; dispute > 0.2 (fractions of box size)
+
+per keypoint: see e0_per_keypoint.csv (coverage, flip error, cross-model distance, jitter, consensus)
+
+confidence vs agreement with the other model (fraction within the agree threshold, count):
+  ViTPose: {'0.5-0.7': (0.387, 13839), '0.7-0.9': (0.672, 20353), '>=0.9': (0.918, 17573)}
+  YOLO:    {'0.5-0.7': (0.411, 6054), '0.7-0.9': (0.401, 11874), '>=0.9': (0.697, 40434)}
+
+consensus keypoints per training-eligible frame: median 4.0, mean 5.9 of 17
+consensus coverage upper body 0.36, lower body 0.47
+E1 feasibility (proposed rule: median >= 8 AND lower body >= 0.30): NOT FEASIBLE
+
+most disputed held-out frames (E3 candidates): e0_disputed_heldout.csv (top 30)
