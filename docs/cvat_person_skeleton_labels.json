@@ -1,0 +1,113 @@
+[
+  {
+    "name": "person",
+    "color": "#2f9e44",
+    "type": "skeleton",
+    "attributes": [],
+    "sublabels": [
+      {
+        "name": "nose",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "left_eye",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "right_eye",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "left_ear",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "right_ear",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "left_shoulder",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "right_shoulder",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "left_elbow",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "right_elbow",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "left_wrist",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "right_wrist",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "left_hip",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "right_hip",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "left_knee",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "right_knee",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "left_ankle",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      },
+      {
+        "name": "right_ankle",
+        "type": "points",
+        "color": "#ffffff",
+        "attributes": []
+      }
+    ],
+    "svg": "<line x1=\"40\" y1=\"95\" x2=\"41\" y2=\"76\" data-type=\"edge\" data-node-from=\"16\" data-node-to=\"14\" stroke-width=\"0.5\"></line>\n<line x1=\"41\" y1=\"76\" x2=\"42\" y2=\"56\" data-type=\"edge\" data-node-from=\"14\" data-node-to=\"12\" stroke-width=\"0.5\"></line>\n<line x1=\"60\" y1=\"95\" x2=\"59\" y2=\"76\" data-type=\"edge\" data-node-from=\"17\" data-node-to=\"15\" stroke-width=\"0.5\"></line>\n<line x1=\"59\" y1=\"76\" x2=\"58\" y2=\"56\" data-type=\"edge\" data-node-from=\"15\" data-node-to=\"13\" stroke-width=\"0.5\"></line>\n<line x1=\"42\" y1=\"56\" x2=\"58\" y2=\"56\" data-type=\"edge\" data-node-from=\"12\" data-node-to=\"13\" stroke-width=\"0.5\"></line>\n<line x1=\"38\" y1=\"24\" x2=\"42\" y2=\"56\" data-type=\"edge\" data-node-from=\"6\" data-node-to=\"12\" stroke-width=\"0.5\"></line>\n<line x1=\"62\" y1=\"24\" x2=\"58\" y2=\"56\" data-type=\"edge\" data-node-from=\"7\" data-node-to=\"13\" stroke-width=\"0.5\"></line>\n<line x1=\"38\" y1=\"24\" x2=\"62\" y2=\"24\" data-type=\"edge\" data-node-from=\"6\" data-node-to=\"7\" stroke-width=\"0.5\"></line>\n<line x1=\"38\" y1=\"24\" x2=\"30\" y2=\"40\" data-type=\"edge\" data-node-from=\"6\" data-node-to=\"8\" stroke-width=\"0.5\"></line>\n<line x1=\"62\" y1=\"24\" x2=\"70\" y2=\"40\" data-type=\"edge\" data-node-from=\"7\" data-node-to=\"9\" stroke-width=\"0.5\"></line>\n<line x1=\"30\" y1=\"40\" x2=\"26\" y2=\"56\" data-type=\"edge\" data-node-from=\"8\" data-node-to=\"10\" stroke-width=\"0.5\"></line>\n<line x1=\"70\" y1=\"40\" x2=\"74\" y2=\"56\" data-type=\"edge\" data-node-from=\"9\" data-node-to=\"11\" stroke-width=\"0.5\"></line>\n<line x1=\"46\" y1=\"5\" x2=\"54\" y2=\"5\" data-type=\"edge\" data-node-from=\"2\" data-node-to=\"3\" stroke-width=\"0.5\"></line>\n<line x1=\"50\" y1=\"8\" x2=\"46\" y2=\"5\" data-type=\"edge\" data-node-from=\"1\" data-node-to=\"2\" stroke-width=\"0.5\"></line>\n<line x1=\"50\" y1=\"8\" x2=\"54\" y2=\"5\" data-type=\"edge\" data-node-from=\"1\" data-node-to=\"3\" stroke-width=\"0.5\"></line>\n<line x1=\"46\" y1=\"5\" x2=\"41\" y2=\"8\" data-type=\"edge\" data-node-from=\"2\" data-node-to=\"4\" stroke-width=\"0.5\"></line>\n<line x1=\"54\" y1=\"5\" x2=\"59\" y2=\"8\" data-type=\"edge\" data-node-from=\"3\" data-node-to=\"5\" stroke-width=\"0.5\"></line>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"50\" cy=\"8\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"1\" data-node-id=\"1\" data-label-name=\"nose\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"46\" cy=\"5\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"2\" data-node-id=\"2\" data-label-name=\"left_eye\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"54\" cy=\"5\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"3\" data-node-id=\"3\" data-label-name=\"right_eye\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"41\" cy=\"8\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"4\" data-node-id=\"4\" data-label-name=\"left_ear\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"59\" cy=\"8\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"5\" data-node-id=\"5\" data-label-name=\"right_ear\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"38\" cy=\"24\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"6\" data-node-id=\"6\" data-label-name=\"left_shoulder\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"62\" cy=\"24\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"7\" data-node-id=\"7\" data-label-name=\"right_shoulder\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"30\" cy=\"40\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"8\" data-node-id=\"8\" data-label-name=\"left_elbow\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"70\" cy=\"40\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"9\" data-node-id=\"9\" data-label-name=\"right_elbow\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"26\" cy=\"56\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"10\" data-node-id=\"10\" data-label-name=\"left_wrist\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"74\" cy=\"56\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"11\" data-node-id=\"11\" data-label-name=\"right_wrist\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"42\" cy=\"56\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"12\" data-node-id=\"12\" data-label-name=\"left_hip\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"58\" cy=\"56\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"13\" data-node-id=\"13\" data-label-name=\"right_hip\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"41\" cy=\"76\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"14\" data-node-id=\"14\" data-label-name=\"left_knee\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"59\" cy=\"76\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"15\" data-node-id=\"15\" data-label-name=\"right_knee\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"40\" cy=\"95\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"16\" data-node-id=\"16\" data-label-name=\"left_ankle\"></circle>\n<circle r=\"1.5\" stroke=\"black\" fill=\"#b3b3b3\" cx=\"60\" cy=\"95\" stroke-width=\"0.1\" data-type=\"element node\" data-element-id=\"17\" data-node-id=\"17\" data-label-name=\"right_ankle\"></circle>"
+  }
+]

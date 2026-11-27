@@ -71,6 +71,24 @@ no incident is raised.
 Input **synthetic** with AI config `configs/ai.yaml`: the mock engine replays a scripted scenario through
 the whole stack (no model). Useful to show every risk level and the operator workflow.
 
+## Scenario 4 (optional) — pose skeletons on tracked swimmers (pretrained YOLO11s-pose)
+
+Display only: keypoints are drawn and recorded, the risk engine ignores them ([`POSE_INTEGRATION.md`](POSE_INTEGRATION.md)).
+Start the dashboard with this repository's code first on the path and the pose config preset:
+
+```powershell
+cd E:\lifeguardDron\lifeguard-system
+$env:PYTHONPATH = "E:\lifeguardDron\lifeguard-system\src"
+$env:LIFEGUARD_AI_CONFIG = "E:\lifeguardDron\lifeguard-system\configs\ai_z5cc_pose.yaml"
+$env:LIFEGUARD_SYSTEM_CONFIG = "E:\lifeguardDron\lifeguard-system\configs\system_demo_drone.yaml"
+& E:\lifeguardDron\.venv-train\Scripts\python.exe -m streamlit run src/lifeguard/app/dashboard.py
+```
+
+Input video `E:\lifeguardDron\demo\demo_01_swim_I-EKqLdbysk.mp4` (up to 4 swimmers). Skeletons appear on tracked
+swimmers (head white, torso teal, left blue, right amber; only joints with confidence >= 0.5); the Swimmers table shows
+`pose` = confident joints out of 17. Alerts are identical with pose off (`configs/ai_z5cc.yaml`). With pose on,
+processing on the GTX 1650 is about 23-25 FPS (below the clips' 30 fps), so playback runs slightly behind.
+
 ## Results to show next to the demo
 
 - `E:\lifeguardDron\Z5cc_work_backup\Z5cc_work\RESULTS_test.csv` — all experiments.
