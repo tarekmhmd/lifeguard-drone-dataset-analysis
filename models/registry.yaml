@@ -74,3 +74,11 @@ models:
     sha256: a6683aa3a2a0a4da5b56dc3839fd1a2cc1ee2cbb59ab023e3897f50abd1d5187
     mock: false
     description: YOLO11s overhead pool detector (ddt_v2, classes swimming/drowning/out_of_water, imgsz 640); held-out test mAP50 0.636; not validated on the team's own camera
+  - name: pose_yolo11s_coco_v1
+    version: 1.0.0
+    kind: pose
+    path: yolo11s-pose.pt
+    sha256: 1060bda4a27012060eca246f9b2adeea22eabb045a1e58f8d229be29b7ebc2ba
+    url: https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11s-pose.pt
+    mock: false
+    description: Official Ultralytics COCO-pretrained YOLO11s-pose (17 COCO keypoints), unmodified; display/recording only, not used by the risk engine; not validated as a pose reference on pool video

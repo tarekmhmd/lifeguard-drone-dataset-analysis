@@ -1,0 +1,31 @@
+# Member 1 configuration: the Z5cc pool detector (configs/ai_z5cc.yaml, unchanged settings) PLUS pose keypoints.
+# Requires: pip install -e ".[vision]", models/z5cc_s448_final.pt and models/yolo11s-pose.pt
+# (python -m lifeguard.common.models fetch pose_yolo11s_coco_v1 downloads the official file and checks its sha256).
+#
+# Pose model: the official COCO-pretrained Ultralytics YOLO11s-pose, unmodified (docs/POSE_INTEGRATION.md).
+# It runs on crops of the boxes ByteTrack is tracking (no second full-frame detector), fills
+# TrackObs.keypoints and is drawn on the dashboard. It is DISPLAY AND RECORDING ONLY: the risk engine does not
+# read keypoints, so pose cannot raise WATCH, PRE_ALERT or ALARM. Set pose.enabled: false (or use
+# configs/ai_z5cc.yaml) for the previous behaviour.
+engine: yolo
+yolo:
+  weights: ../models/z5cc_s448_final.pt
+  conf: 0.1
+  iou: 0.7
+  imgsz: 448
+  device: null
+  person_class_ids: [0, 1]
+  distress_class_ids: [1]
+pose:
+  enabled: true
+  weights: ../models/yolo11s-pose.pt
+  conf: 0.25                      # pose model's person confidence inside a crop
+  imgsz: 320                      # crop inference size (see docs/POSE_INTEGRATION.md for GTX 1650 timings)
+  device: null
+  crop_margin: 0.15               # crop = tracked box + 15 % of its longer side
+  min_iou: 0.3                    # pose person box must overlap the tracked box this much
+  max_tracks: 8                   # tracks per frame that get a pose (highest detector confidence first)
+  half: false
+  allow_missing_weights: true     # missing file -> run without pose (warning); checksum mismatch -> refuse
+behavior: none
+model_registry: ../models/registry.yaml

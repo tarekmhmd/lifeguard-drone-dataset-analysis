@@ -66,6 +66,37 @@ class YoloEngineConfig(BaseModel):
         return self.person_class_ids if self.person_class_ids is not None else (self.person_class_id,)
 
 
+class PoseConfig(BaseModel):
+    """Optional pose estimation on tracked swimmers (Ultralytics YOLO pose, ``vision`` extra).
+
+    Display and recording only: the keypoints fill ``TrackObs.keypoints`` and are drawn on the dashboard, but
+    the risk engine does not read them (no pose weight exists), so pose can never raise WATCH, PRE_ALERT or
+    ALARM. Give either ``weights`` (a file path) or ``model`` (a registry name) when ``enabled``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    weights: Path | None = None
+    model: str | None = None
+    conf: float = Field(0.25, gt=0.0, lt=1.0)        # pose model's person confidence inside a crop
+    imgsz: int = Field(320, ge=32)                   # inference size of the swimmer crops
+    device: str | None = None
+    crop_margin: float = Field(0.15, ge=0.0, le=1.0)  # crop = tracked box + this fraction of its longer side
+    min_iou: float = Field(0.3, gt=0.0, le=1.0)      # pose person box vs tracked box (association)
+    max_tracks: int = Field(8, ge=1)                 # tracks per frame that get a pose (highest det_conf first)
+    half: bool = False                               # FP16 inference (CUDA only)
+    # Missing weights FILE: true -> log a warning and run without pose (detection/tracking/risk unchanged);
+    # false -> refuse to start. A registry checksum mismatch always refuses to start.
+    allow_missing_weights: bool = True
+
+    @model_validator(mode="after")
+    def _one_source(self) -> PoseConfig:
+        if self.enabled and (self.weights is None) == (self.model is None):
+            raise ValueError("pose needs exactly one of 'weights' (path) or 'model' (registry name) when enabled")
+        return self
+
+
 class AIConfig(BaseModel):
     """Member 1 configuration: engine selection plus per-engine settings."""
 
@@ -76,6 +107,8 @@ class AIConfig(BaseModel):
     yolo: YoloEngineConfig | None = None
     tracker: TrackerConfig = Field(default_factory=TrackerConfig)
     features: FeatureConfig = Field(default_factory=FeatureConfig)
+    # Pose keypoints on tracked swimmers (real engine only); disabled unless the block says enabled: true.
+    pose: PoseConfig = Field(default_factory=PoseConfig)
     # Temporal behaviour model for the real engine: "none", the unvalidated rules baseline, or a trained
     # softmax model (JSON from ``python -m lifeguard.ai.temporal.train``) given as a path or a registry name.
     behavior: Literal["none", "rules", "softmax"] = "none"
@@ -94,7 +127,11 @@ class AIConfig(BaseModel):
             raise ValueError("engine 'yolo' requires yolo configuration")
         if self.behavior == "softmax" and self.behavior_model is None and self.behavior_model_name is None:
             raise ValueError("behavior 'softmax' requires behavior_model or behavior_model_name")
-        named = (self.yolo is not None and self.yolo.model is not None) or self.behavior_model_name is not None
+        named = (
+            (self.yolo is not None and self.yolo.model is not None)
+            or self.behavior_model_name is not None
+            or (self.pose.enabled and self.pose.model is not None)
+        )
         if named and self.model_registry is None:
             raise ValueError("models referenced by name need model_registry")
         return self
@@ -115,6 +152,8 @@ def load_ai_config(path: Path | str) -> AIConfig:
         config.yolo.weights = resolve(config.yolo.weights) or config.yolo.weights
     if config.behavior_model is not None:
         config.behavior_model = resolve(config.behavior_model) or config.behavior_model
+    if config.pose.weights is not None:
+        config.pose.weights = resolve(config.pose.weights) or config.pose.weights
     if config.model_registry is not None:
         config.model_registry = resolve(config.model_registry) or config.model_registry
     return config
