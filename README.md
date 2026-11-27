@@ -1,17 +1,12 @@
 # Autonomous AI Lifeguard System
 
-Swimming-pool lifeguard *assistant*: video → person detection and tracking → temporal risk
-assessment → incidents and alerts for lifeguards → (optional, simulation-only) drone response.
-It raises suspected incidents for humans to check; it never declares a drowning and never acts
-physically on its own.
+Swimming-pool lifeguard **assistant**: video → person detection and tracking → temporal risk assessment → incidents and alerts for lifeguards → (optional, simulation-only) drone response.
 
-**Status (2026-11-25):** the software is complete and tested. Two pool-trained YOLO11s detectors
-exist — side-view Z5cc (held-out test mAP50 0.704) and overhead ddt (0.636) — evaluated on held-out
-internet pool videos, not yet on the team's own camera; ArduPilot SITL and a real camera are not verified.
-Training and data work: [`docs/MODEL_TRAINING_REPORT.md`](docs/MODEL_TRAINING_REPORT.md); supervisor
-demo: [`docs/DEMO.md`](docs/DEMO.md). See [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md) for the architecture, what is
-real/mock/simulated, configuration and all commands, and [`docs/ROADMAP.md`](docs/ROADMAP.md) for
-history and open decisions.
+It raises suspected incidents for humans to check; it never declares a drowning and never acts physically on its own.
+
+**Status (2026-11-27):** The core software is complete and tested. Two pool-trained YOLO11s detectors exist — side-view Z5cc (held-out test mAP50 0.704) and overhead DDT (0.636) — evaluated on held-out internet pool videos, not yet on the team's own camera. ArduPilot SITL and a real camera are not verified.
+
+Training and data work: [Model Training Report](docs/MODEL_TRAINING_REPORT.md). Supervisor demo: [Demo Guide](docs/DEMO.md). See [System Guide](docs/SYSTEM_GUIDE.md) for architecture, real/mock/simulated components, configuration and commands, and [Roadmap](docs/ROADMAP.md) for history and open decisions.
 
 Try the whole system without a camera or weights (mock perception, everything else real):
 
@@ -20,21 +15,38 @@ python -m lifeguard.app.main --ai-config configs/ai.yaml --system-config configs
 python -m pip install -e ".[dashboard]"; streamlit run src/lifeguard/app/dashboard.py
 ```
 
-Repository areas:
+## Repository areas
 
 | Path | Contents |
-| --- | --- |
-| `src/lifeguard/` | Python package: `contracts` (frozen v1.0), `ai` (perception, tracking, behaviour), `system` (risk, alerts, health, recording, geometry, ingest, response), `robotics` (simulated drone), `app` (runtime, CLIs, dashboard) |
+|---|---|
+| `src/lifeguard/` | Python package: `contracts` (frozen v1.0), `ai` (perception, tracking, behaviour and pose estimation), `system` (risk, alerts, health, recording, geometry, ingest, response), `robotics` (simulated drone), `app` (runtime, CLIs, dashboard) |
 | `tests/` | pytest suite (unit, `integration/` milestone tests), contract examples and generated synthetic fixtures |
-| `configs/` | `ai.yaml` (mock), `ai_yolo.yaml` (COCO), `ai_z5cc.yaml` / `ai_ddt.yaml` (pool detectors) (Member 1); `system.yaml`, `system_demo_drone.yaml` (demo) (Member 2) |
-| `models/` | `registry.yaml`: every loadable model with its sha256 (weights themselves are never committed) |
-| `docs/` | [`SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md), [`index.md`](docs/index.md) (decisions, workflow, milestones), [`ai/annotation_guide.md`](docs/ai/annotation_guide.md), [`ROADMAP.md`](docs/ROADMAP.md), [`MODEL_TRAINING_REPORT.md`](docs/MODEL_TRAINING_REPORT.md), [`DEMO.md`](docs/DEMO.md), [`TEMPORAL_PLAN.md`](docs/TEMPORAL_PLAN.md), dataset decision reports |
-| `python_scripts/`, `notebooks/` | Dataset and training scripts (see `python_scripts/README.md`) |
+| `configs/` | `ai.yaml` (mock), `ai_yolo.yaml` (COCO), `ai_z5cc.yaml` / `ai_ddt.yaml` (pool detectors), `ai_z5cc_pose.yaml` (Z5cc + pretrained YOLO11s-Pose skeleton visualization), `system.yaml`, `system_demo_drone.yaml` |
+| `models/` | `registry.yaml`: model registry and SHA256 checksums. Model weights are tracked separately using Git LFS. |
+| `docs/` | System guide, roadmap, model training report, demo guide, Pose documentation, dataset decision reports and research documents |
+| `python_scripts/`, `notebooks/` | Dataset, pose research, training and evaluation scripts/notebooks |
+
+## Pose Estimation — Live Swimmer Skeleton Visualization
+
+The monitoring dashboard now supports pose estimation on tracked swimmer crops. The pose model estimates body keypoints and displays skeleton overlays directly in the monitoring interface.
+
+Pose estimation is an additional visual monitoring layer. It does not independently classify drowning, modify the risk engine, or trigger alerts.
+
+### Live Skeleton Overlay
+
+![Live swimmer skeleton overlay](docs/images/pose/dashboard_demo01_skeleton_live.jpg)
+
+### Pose-Aware Swimmer Monitoring
+
+![Swimmer monitoring with pose keypoints](docs/images/pose/dashboard_demo01_swimmers_table_pose_column.jpg)
+
+![Second swimmer pose monitoring example](docs/images/pose/dashboard_demo06_swimmers_table_pose_column.jpg)
+
+For implementation details, model configuration, benchmarks and limitations, see [Pose Integration Documentation](docs/POSE_INTEGRATION.md).
 
 ## Phase 1 developer quickstart
 
-Requires Python 3.11 (3.10+ supported). Commands are shown for Windows PowerShell; on
-Linux/macOS activate with `source .venv/bin/activate`.
+Requires Python 3.11 (3.10+ supported). Commands are shown for Windows PowerShell; on Linux/macOS activate with `source .venv/bin/activate`.
 
 ### 1. Create and activate a virtual environment
 
@@ -63,24 +75,21 @@ Expected results:
 - `ruff` reports no errors.
 - `pytest` reports 0 failures and 0 errors.
 - `generate_fixtures --check` exits 0 (committed fixtures match the generator).
-- `replay_mock` exits 0 and prints one line of the form
-  `frames=<N> ok=<n> degraded=<n> error=<n> unique_tracks=<k> max_submersion_s=<x.xxx>`,
+- `replay_mock` exits 0 and prints one line of the form:
+
+  `frames=<N> ok=<n> degraded=<n> error=<n> unique_tracks=<k> max_submersion_s=<x.xxx>`
+
   with `max_submersion_s` > 0 for the default `submersion` fixture.
 
-`replay_mock` options: `--frames N` (default: fixture length) and `--out PATH.jsonl`
-(write every `FrameResult`). Exit codes: 0 success, 2 bad arguments/configuration,
-3 model/fixture load error, 4 too many consecutive engine errors.
+`replay_mock` options: `--frames N` (default: fixture length) and `--out PATH.jsonl` (write every `FrameResult`). Exit codes: 0 success, 2 bad arguments/configuration, 3 model/fixture load error, 4 too many consecutive engine errors.
 
-Running the real pipeline on a recorded video (optional; needs `pip install -e ".[vision]"` and a local
-weights file referenced by `configs/ai_yolo.yaml`; pool geometry is a placeholder rectangle until
-calibration exists, and nothing here is validated on pool video):
+Running the real pipeline on a recorded video (optional; needs `pip install -e ".[vision]"` and a local weights file referenced by `configs/ai_yolo.yaml`; pool geometry is a placeholder rectangle until calibration exists, and nothing here is validated on pool video):
 
 ```powershell
 python -m lifeguard.app.run_video --ai-config configs/ai_yolo.yaml --system-config configs/system.yaml --video path\to\pool.mp4 --out-events events.jsonl
 ```
 
-Event-level evaluation of the risk engine (missed events, false alarms per hour, latency; on the
-synthetic fixtures this checks logic only, not real-world accuracy):
+Event-level evaluation of the risk engine (missed events, false alarms per hour, latency; on the synthetic fixtures this checks logic only, not real-world accuracy):
 
 ```powershell
 python -m lifeguard.app.evaluate --frames tests/fixtures/synthetic/submersion_seed0.jsonl --truth tests/fixtures/synthetic/submersion_seed0_events.csv --system-config configs/system.yaml --sweep t_sub_s=6,8,10,12
@@ -94,13 +103,11 @@ python -m lifeguard.ai.sim.generate_fixtures --out tests/fixtures/synthetic --se
 
 ### Phase 1 documentation
 
-- [`docs/phase1/PHASE_1_IMPLEMENTATION_SPEC.md`](docs/phase1/PHASE_1_IMPLEMENTATION_SPEC.md)
-- [`docs/phase1/PHASE_1_TEST_PLAN.md`](docs/phase1/PHASE_1_TEST_PLAN.md)
-- [`docs/phase1/PHASE_1_EXECUTION_PLAN.md`](docs/phase1/PHASE_1_EXECUTION_PLAN.md)
-- [`docs/phase1/PHASE_1_DECISIONS_AND_ASSUMPTIONS.md`](docs/phase1/PHASE_1_DECISIONS_AND_ASSUMPTIONS.md)
-- [`docs/phase1/PHASE_1_HANDOFF_CHECKLIST.md`](docs/phase1/PHASE_1_HANDOFF_CHECKLIST.md)
-- [`docs/phase1/CODING_AGENT_INSTRUCTIONS.md`](docs/phase1/CODING_AGENT_INSTRUCTIONS.md)
+- [Phase 1 Implementation Spec](docs/phase1/PHASE_1_IMPLEMENTATION_SPEC.md)
+- [Phase 1 Test Plan](docs/phase1/PHASE_1_TEST_PLAN.md)
+- [Phase 1 Execution Plan](docs/phase1/PHASE_1_EXECUTION_PLAN.md)
+- [Phase 1 Decisions and Assumptions](docs/phase1/PHASE_1_DECISIONS_AND_ASSUMPTIONS.md)
+- [Phase 1 Handoff Checklist](docs/phase1/PHASE_1_HANDOFF_CHECKLIST.md)
+- [Coding Agent Instructions](docs/phase1/CODING_AGENT_INSTRUCTIONS.md)
 
-> Note: the `docs/phase1/` documents are not yet part of this repository; they currently
-> live in the main project workspace and must be copied into `docs/phase1/` for these links
-> to resolve.
+> Note: The `docs/phase1/` documents are not yet part of this repository; they currently live in the main project workspace and must be copied into `docs/phase1/` for these links to resolve.
