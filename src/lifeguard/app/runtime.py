@@ -145,6 +145,9 @@ class LifeguardRuntime:
             "recording": str(cfg.recording.out_dir) if self.clips.enabled else "disabled",
             "incident_log": str(cfg.alerts.incident_db) if cfg.alerts.incident_db else "in memory",
         }
+        if ai_config.pose.enabled:  # listed only when configured, so pose-off sessions report as before
+            status = getattr(self.engine, "pose_status", None) or "not supported by this engine"
+            self.components["pose"] = f"{status} (display only; not used by the risk engine)"
         for name, value in self.components.items():
             logger.info("component %-13s %s", name, value)
         self._lock = threading.RLock()
