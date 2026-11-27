@@ -65,7 +65,7 @@ class ModelEntry(BaseModel):
 
     name: str
     version: str = Field(pattern=r"^\d+\.\d+\.\d+$")
-    kind: Literal["detector", "behavior", "mock_fixture"]
+    kind: Literal["detector", "pose", "behavior", "mock_fixture"]
     path: Path
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     url: str | None = None

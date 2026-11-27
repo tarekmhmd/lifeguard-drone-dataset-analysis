@@ -5,14 +5,17 @@ in system/ for the swap"). With ``model_registry`` set, every file loaded here i
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from lifeguard.ai.config import AIConfig
 from lifeguard.ai.perception.mock_engine import MockPerceptionEngine
+from lifeguard.ai.pose.base import PoseEstimator
 from lifeguard.common.models import ModelRegistry
 from lifeguard.contracts.enums import DetClass
 from lifeguard.contracts.interfaces import PerceptionEngine, PoolGeometry
 
+logger = logging.getLogger(__name__)
 
 def _model_file(registry: ModelRegistry | None, path: Path | None, name: str | None) -> Path:
     """The file to load: by registry name, or a path that must be registered when a registry is in use."""
@@ -25,6 +28,40 @@ def _model_file(registry: ModelRegistry | None, path: Path | None, name: str | N
     if registry is not None:
         registry.verify_file(path)
     return path
+
+
+def _pose_estimator(ai_config: AIConfig, registry: ModelRegistry | None) -> tuple[PoseEstimator | None, str]:
+    """Build the configured pose estimator: ``(estimator or None, status for model_versions['pose'])``.
+
+    A missing weights FILE with ``allow_missing_weights`` disables pose with a warning (detection, tracking
+    and risk run unchanged). Every other problem (unregistered file, checksum mismatch, wrong model type)
+    raises, like the detector.
+    """
+    pose = ai_config.pose
+    if not pose.enabled:
+        return None, "disabled"
+    if pose.model is not None:
+        target = registry.file_of(registry.get(pose.model)) if registry is not None else None
+    else:
+        target = pose.weights
+    if target is not None and not Path(target).is_file() and pose.allow_missing_weights:
+        logger.warning("pose enabled but weights file missing (%s): running WITHOUT pose", target)
+        return None, "unavailable: weights file missing"
+    from lifeguard.ai.pose.ultralytics_pose import UltralyticsPoseEstimator
+
+    return (
+        UltralyticsPoseEstimator(
+            _model_file(registry, pose.weights, pose.model),
+            conf=pose.conf,
+            imgsz=pose.imgsz,
+            device=pose.device,
+            crop_margin=pose.crop_margin,
+            min_iou=pose.min_iou,
+            max_tracks=pose.max_tracks,
+            half=pose.half,
+        ),
+        "enabled",
+    )
 
 
 def create_engine(
@@ -85,6 +122,7 @@ def create_engine(
         class_map={class_id: DetClass.PERSON for class_id in yolo.class_ids},
         distress_classes=yolo.distress_class_ids,
     )
+    pose_estimator, pose_status = _pose_estimator(ai_config, registry)
     return RealPerceptionEngine(
         detector,
         geometry,
@@ -93,4 +131,6 @@ def create_engine(
         tracker_config=ai_config.tracker,
         feature_config=ai_config.features,
         behavior_classifier=behavior,
+        pose_estimator=pose_estimator,
+        pose_status=pose_status,
     )

@@ -16,6 +16,7 @@ import math
 import re
 import time
 from collections import deque
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -23,6 +24,7 @@ from lifeguard.ai.detection.base import Detector
 from lifeguard.ai.features.config import FeatureConfig
 from lifeguard.ai.features.extractor import FeatureExtractor
 from lifeguard.ai.features.submersion import PoolTrackView, SubmersionMonitor
+from lifeguard.ai.pose.base import Keypoints, PoseEstimator
 from lifeguard.ai.temporal.base import BehaviorClassifier
 from lifeguard.ai.tracking.bytetrack import ByteTracker, TrackedBox
 from lifeguard.ai.tracking.config import TrackerConfig
@@ -61,8 +63,14 @@ class RealPerceptionEngine(PerceptionEngine):
         tracker_config: TrackerConfig | None = None,
         feature_config: FeatureConfig | None = None,
         behavior_classifier: BehaviorClassifier | None = None,
+        pose_estimator: PoseEstimator | None = None,
+        pose_status: str = "disabled",
     ) -> None:
         """Build the pipeline.
+
+        ``pose_estimator`` (optional) fills ``TrackObs.keypoints`` for visible tracks. It is display and
+        recording only: the risk engine does not read keypoints, and a pose failure leaves the keypoints
+        ``None`` for that frame without affecting detection, tracking or the result status.
 
         Raises:
             ValueError: If cam_id or session_id is not a valid identifier.
@@ -95,6 +103,12 @@ class RealPerceptionEngine(PerceptionEngine):
         self._behavior = behavior_classifier
         if behavior_classifier is not None:
             self._model_versions["behavior"] = behavior_classifier.model_version
+        self._pose = pose_estimator
+        self.pose_stats = PoseStats()
+        if pose_estimator is not None:
+            self._model_versions["pose"] = pose_estimator.model_version
+        elif pose_status != "disabled":
+            self._model_versions["pose"] = pose_status   # e.g. "unavailable: weights file missing"
 
     @property
     def cam_id(self) -> str:
@@ -103,6 +117,11 @@ class RealPerceptionEngine(PerceptionEngine):
     @property
     def session_id(self) -> str:
         return self._session_id
+
+    @property
+    def pose_status(self) -> str:
+        """Pose model version, its unavailability reason, or "disabled"."""
+        return self._model_versions.get("pose", "disabled")
 
     def reset(self) -> None:
         """Start a new session: clear tracks, timers, feature buffers and counters."""
@@ -118,6 +137,7 @@ class RealPerceptionEngine(PerceptionEngine):
         self._last_latency_ms = None
         self._last_t_capture = None
         self._fps = None
+        self.pose_stats = PoseStats()
 
     def heartbeat(self) -> EngineHeartbeat:
         return EngineHeartbeat(
@@ -198,6 +218,7 @@ class RealPerceptionEngine(PerceptionEngine):
             for box, xy, in_water in mapped
         ]
         timers = self._monitor.update(t, views)
+        poses = self._estimate_poses(frame, boxes, width, height)
 
         tracks: list[TrackObs] = []
         for box, xy, in_water in mapped:
@@ -227,6 +248,7 @@ class RealPerceptionEngine(PerceptionEngine):
                 pool_xy=xy,
                 in_water=in_water,
                 zone=self._geometry.zone(*xy) if xy is not None else None,
+                keypoints=poses.get(box.track_id),
                 features=features,
                 behavior=behavior,
             ))
@@ -260,6 +282,41 @@ class RealPerceptionEngine(PerceptionEngine):
             submersions=submersions,
             model_versions=dict(self._model_versions),
         )
+
+    def _estimate_poses(
+        self, frame: np.ndarray, boxes: list[TrackedBox], width: int, height: int
+    ) -> dict[int, Keypoints | None]:
+        """Keypoints for the visible tracks (highest confidence first). Never raises."""
+        if self._pose is None:
+            return {}
+        visible = sorted(
+            (b for b in boxes if b.state == TrackState.TRACKED), key=lambda b: b.conf, reverse=True
+        )
+        requests = [(b.track_id, c) for b in visible if (c := _clip_box(b.box_xyxy, width, height)) is not None]
+        if not requests:
+            return {}
+        start = time.perf_counter()
+        try:
+            poses = self._pose.estimate(frame, requests)
+        except Exception as err:  # noqa: BLE001 - pose must never take detection, tracking or risk down
+            self.pose_stats.errors += 1
+            if self.pose_stats.errors == 1 or self.pose_stats.errors % 100 == 0:
+                logger.warning("pose estimation failed (%d so far), keypoints omitted: %s: %s",
+                               self.pose_stats.errors, type(err).__name__, err)
+            return {}
+        ms = (time.perf_counter() - start) * 1000.0
+        wanted = {track_id for track_id, _ in requests}
+        poses = {
+            tid: (kp if _valid_keypoints(kp, width, height) else None)
+            for tid, kp in poses.items() if tid in wanted
+        }
+        stats = self.pose_stats
+        stats.frames += 1
+        stats.total_ms += ms
+        stats.last_ms = ms
+        stats.tracks_requested += len(requests)
+        stats.tracks_with_pose += sum(1 for k in poses.values() if k is not None)
+        return poses
 
     def _to_pool(self, box: TrackedBox) -> tuple[tuple[float, float] | None, bool]:
         """Project the box centre to pool metres; in_water when the point is inside the pool."""
@@ -325,6 +382,37 @@ class RealPerceptionEngine(PerceptionEngine):
             latency_ms=(time.perf_counter() - start) * 1000.0,
             model_versions=dict(self._model_versions),
         )
+
+
+@dataclass
+class PoseStats:
+    """Pose counters since the last reset (for benchmarks and the dashboard)."""
+
+    frames: int = 0             # frames on which the estimator ran
+    tracks_requested: int = 0   # visible tracks sent to the estimator
+    tracks_with_pose: int = 0   # of those, tracks that received keypoints
+    errors: int = 0             # estimator exceptions (keypoints omitted for that frame)
+    total_ms: float = 0.0
+    last_ms: float | None = None
+
+    @property
+    def mean_ms(self) -> float | None:
+        return self.total_ms / self.frames if self.frames else None
+
+
+def _valid_keypoints(kp: object, width: int, height: int) -> bool:
+    """True if ``kp`` satisfies the TrackObs/FrameResult keypoint rules (malformed output is dropped)."""
+    if kp is None or not isinstance(kp, tuple) or len(kp) != 17:
+        return False
+    for point in kp:
+        if not isinstance(point, tuple) or len(point) != 3:
+            return False
+        x, y, conf = point
+        if not all(math.isfinite(v) for v in (x, y, conf)) or not 0.0 <= conf <= 1.0:
+            return False
+        if conf > 0 and not (0 <= x <= width and 0 <= y <= height):
+            return False
+    return True
 
 
 def _clip_box(
