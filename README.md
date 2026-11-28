@@ -28,19 +28,29 @@ python -m pip install -e ".[dashboard]"; streamlit run src/lifeguard/app/dashboa
 
 ## Pose Estimation — Live Swimmer Skeleton Visualization
 
-The monitoring dashboard now supports pose estimation on tracked swimmer crops. The pose model estimates body keypoints and displays skeleton overlays directly in the monitoring interface.
+The monitoring dashboard supports pose estimation on tracked swimmer crops using a pretrained YOLO11s-Pose model. It estimates body keypoints and displays skeleton overlays to provide additional visual information during pool monitoring.
 
 Pose estimation is an additional visual monitoring layer. It does not independently classify drowning, modify the risk engine, or trigger alerts.
 
-### Live Skeleton Overlay
+### Swimming Examples
 
-![Live swimmer skeleton overlay](docs/images/pose/dashboard_demo01_skeleton_live.jpg)
+![Swimming pose example 1](docs/images/pose/selected/demo_01_swim_I-EKqLdbysk_frame00395_pose.png)
 
-### Pose-Aware Swimmer Monitoring
+![Swimming pose example 2](docs/images/pose/selected/demo_01_swim_I-EKqLdbysk_frame00990_pose.png)
 
-![Swimmer monitoring with pose keypoints](docs/images/pose/dashboard_demo01_swimmers_table_pose_column.jpg)
+![Swimming pose example 3](docs/images/pose/selected/demo_03_swim_L0KTqPloUiU_frame00228_pose.png)
 
-![Second swimmer pose monitoring example](docs/images/pose/dashboard_demo06_swimmers_table_pose_column.jpg)
+### Drowning Examples
+
+![Drowning pose example 1](docs/images/pose/selected/demo_04_drown_L0KTqPloUiU_frame00053_pose.png)
+
+![Drowning pose example 2](docs/images/pose/selected/demo_04_drown_L0KTqPloUiU_frame00269_pose.png)
+
+![Drowning pose example 3](docs/images/pose/selected/demo_06_drown_T5mDQeDkca0_frame00007_pose.png)
+
+![Drowning pose example 4](docs/images/pose/selected/demo_06_drown_T5mDQeDkca0_frame00066_pose.png)
+
+![Drowning pose example 5](docs/images/pose/selected/demo_06_drown_T5mDQeDkca0_frame00105_pose.png)
 
 For implementation details, model configuration, benchmarks and limitations, see [Pose Integration Documentation](docs/POSE_INTEGRATION.md).
 
@@ -77,9 +87,9 @@ Expected results:
 - `generate_fixtures --check` exits 0 (committed fixtures match the generator).
 - `replay_mock` exits 0 and prints one line of the form:
 
-  `frames=<N> ok=<n> degraded=<n> error=<n> unique_tracks=<k> max_submersion_s=<x.xxx>`
+`frames=<N> ok=<n> degraded=<n> error=<n> unique_tracks=<k> max_submersion_s=<x.xxx>`
 
-  with `max_submersion_s` > 0 for the default `submersion` fixture.
+with `max_submersion_s` > 0 for the default `submersion` fixture.
 
 `replay_mock` options: `--frames N` (default: fixture length) and `--out PATH.jsonl` (write every `FrameResult`). Exit codes: 0 success, 2 bad arguments/configuration, 3 model/fixture load error, 4 too many consecutive engine errors.
 
