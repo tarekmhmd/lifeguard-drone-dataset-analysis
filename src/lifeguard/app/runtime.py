@@ -4,6 +4,7 @@
            -> RiskEngine -> AlertService (incidents, notifications, SQLite log)
            -> ResponsePlatform (manual or simulated drone) on a lifeguard CONFIRM only
     + Watchdog (health faults) + ClipRecorder (alarm clips)
+    + HardwareService (optional ESP32 pool prototype; display/commands only, never an input to risk)
 
 The AI core never depends on the response platform. All public methods are thread-safe so the operator
 dashboard can call ``acknowledge`` / ``confirm_release`` / ``snapshot`` while ``run`` processes frames.
@@ -32,6 +33,8 @@ from lifeguard.contracts.enums import AckDecision, RiskLevel, Status
 from lifeguard.contracts.interfaces import PerceptionEngine, PoolGeometry
 from lifeguard.contracts.timeutil import utc_now
 from lifeguard.contracts.types import Acknowledgement, FrameResult, RiskEvent, SystemHealth
+from lifeguard.hardware.models import HardwareStatus
+from lifeguard.hardware.service import HardwareService
 from lifeguard.system.alerts.service import AckResult, AlertService, Notification
 from lifeguard.system.alerts.store import IncidentStore
 from lifeguard.system.config import SystemConfig
@@ -100,6 +103,7 @@ class Snapshot:
     components: dict[str, str]
     summary: RunSummary
     response_status: dict[str, str]
+    hardware: HardwareStatus | None = None    # None when the hardware subsystem is disabled
 
 
 @dataclass
@@ -120,8 +124,14 @@ class LifeguardRuntime:
         session_id: str | None = None,
         engine: PerceptionEngine | None = None,
         response: ResponsePlatform | None = None,
+        hardware: HardwareService | None = None,
     ) -> None:
-        """Build the system. Raises ModelLoadError / ConfigError / ValueError for unusable configuration."""
+        """Build the system. Raises ModelLoadError / ConfigError / ValueError for unusable configuration.
+
+        ``hardware``: an existing, shared ``HardwareService`` (two-page app). The runtime then uses it (status,
+        on_dispatch bridge) but does not own it: ``close`` leaves it running. Without it, the runtime builds and
+        owns its own service from ``system_config`` as before.
+        """
         cfg = system_config
         self.session_id = session_id or cfg.session_id or datetime.now(timezone.utc).strftime("sess_%Y%m%dT%H%M%SZ")
         self.geometry, geometry_note = build_geometry(cfg, *image_size)
@@ -137,6 +147,23 @@ class LifeguardRuntime:
             self.response, response_note = response, response.name
         else:
             self.response, response_note = build_response(cfg, self.geometry)
+        # Hardware (ESP32 pool prototype): optional, independent of perception and risk; never raises here.
+        self.hardware: HardwareService | None = hardware
+        self._owns_hardware = hardware is None
+        if hardware is not None:                # shared service: already created (and started) by its owner
+            pass
+        elif cfg.hardware_error is not None:    # hardware_file missing/invalid: show a FAULT, run the AI normally
+            self.hardware = HardwareService.unavailable(cfg.hardware_error)
+        elif cfg.hardware.enabled:
+            self.hardware = HardwareService(cfg.hardware)
+            if cfg.hardware.auto_connect:       # otherwise the operator presses Connect
+                self.hardware.start()
+        on_dispatch = self.hardware.config.on_dispatch if self.hardware is not None and not             self.hardware.config_error else ()
+        if self.hardware is not None and on_dispatch:
+            from lifeguard.hardware.response_bridge import HardwareLinkedResponse
+
+            self.response = HardwareLinkedResponse(self.response, self.hardware, on_dispatch)
+            response_note += " + hardware commands on lifeguard-confirmed dispatch"
         self.components = {
             "perception": f"{ai_config.engine}" + (" (MOCK fixture replay)" if ai_config.engine == "mock" else ""),
             "behaviour": f"{ai_config.behavior} (risk weight {cfg.risk.weights.behavior})",
@@ -145,6 +172,8 @@ class LifeguardRuntime:
             "recording": str(cfg.recording.out_dir) if self.clips.enabled else "disabled",
             "incident_log": str(cfg.alerts.incident_db) if cfg.alerts.incident_db else "in memory",
         }
+        if self.hardware is not None:   # listed only when enabled, so hardware-off sessions report as before
+            self.components["hardware"] = self.hardware.describe()
         if ai_config.pose.enabled:  # listed only when configured, so pose-off sessions report as before
             status = getattr(self.engine, "pose_status", None) or "not supported by this engine"
             self.components["pose"] = f"{status} (display only; not used by the risk engine)"
@@ -262,6 +291,8 @@ class LifeguardRuntime:
             return outcome
 
     def snapshot(self) -> Snapshot:
+        # Hardware status is read outside the runtime lock: frame processing never waits on the hardware service.
+        hardware = self.hardware.status() if self.hardware is not None else None
         with self._lock:
             frame = self._frame
             if frame is not None and frame.shape[1] > _PREVIEW_WIDTH:
@@ -278,15 +309,26 @@ class LifeguardRuntime:
                 components=dict(self.components),
                 summary=self._c.summary,
                 response_status=self.response.status(),
+                hardware=hardware,
             )
 
     def close(self) -> None:
-        """Flush clips and close the incident log and the response platform."""
-        with self._lock:
-            for path in self.clips.close():
-                self._attach_clip(path, utc_now())
-            self.response.close()
-            self.store.close()
+        """Flush clips and close the incident log and the response platform; always stop OWNED hardware.
+
+        A cleanup error is re-raised to the caller, but only after the hardware service has been stopped
+        (safe-stop, thread joined, server closed), so a failed close never leaves a device link or port open.
+        """
+        try:
+            with self._lock:
+                for path in self.clips.close():
+                    self._attach_clip(path, utc_now())
+                self.response.close()
+                self.store.close()
+        finally:
+            # Outside the lock: safe-stop waits briefly for the acknowledgement. A shared service belongs to its
+            # owner (the two-page app's hub) and keeps running for the Hardware page.
+            if self.hardware is not None and self._owns_hardware:
+                self.hardware.stop()
 
     # --------------------------------------------------------------- helpers
 

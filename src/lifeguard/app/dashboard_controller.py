@@ -3,7 +3,8 @@ snapshots into display rows. No Streamlit import here, so it is testable headles
 
 Every operator control maps to a real runtime call:
 - Confirm / Dismiss -> ``LifeguardRuntime.acknowledge`` -> risk engine + alert service (+ response platform);
-- Confirm release   -> ``LifeguardRuntime.confirm_release`` -> simulated drone executor.
+- Confirm release   -> ``LifeguardRuntime.confirm_release`` -> simulated drone executor;
+- Hardware stop / e-stop / test commands -> ``HardwareService`` -> command manager (all checks apply).
 """
 from __future__ import annotations
 
@@ -18,6 +19,12 @@ from typing import Any
 import numpy as np
 
 from lifeguard.ai.config import load_ai_config
+from lifeguard.app.hardware_hub import HardwareHub
+from lifeguard.app.hardware_view import (  # noqa: F401 - hardware_badges/rows re-exported for existing callers
+    HardwareConsole,
+    hardware_badges,
+    hardware_rows,
+)
 from lifeguard.app.main import open_source
 from lifeguard.app.runtime import LifeguardRuntime, Snapshot
 from lifeguard.common.models import ModelIntegrityError, integrity_fault
@@ -164,7 +171,11 @@ def health_rows(snap: Snapshot) -> list[dict[str, str]]:
 class DashboardController:
     """Owns one runtime and its worker thread."""
 
-    def __init__(self) -> None:
+    def __init__(self, hub: HardwareHub | None = None) -> None:
+        """``hub``: the process-wide shared hardware owner (two-page app). Without it the runtime owns its own
+        hardware service, exactly as before (standalone dashboard)."""
+        self.hub = hub
+        self._hub_attached = False
         self.runtime: LifeguardRuntime | None = None
         self.error: str | None = None
         self._thread: threading.Thread | None = None
@@ -184,8 +195,13 @@ class DashboardController:
             sys_cfg = load_system_config(system_config)
             args = _Args(choice)
             source, size, fps = open_source(args, ai_cfg)
-            self.runtime = LifeguardRuntime(ai_cfg, sys_cfg, size)
+            shared = None
+            if self.hub is not None:     # one hardware service per process, shared with the Hardware page
+                shared = self.hub.acquire_for_ai(sys_cfg, str(system_config))
+                self._hub_attached = shared is not None
+            self.runtime = LifeguardRuntime(ai_cfg, sys_cfg, size, hardware=shared)
         except (LifeguardError, OSError, ValueError, ImportError) as err:  # shown to the operator, no crash
+            self._release_hub()
             self.error = f"{type(err).__name__}: {err}"
             if isinstance(err, ModelIntegrityError):
                 self.error = f"SYSTEM FAULT: {integrity_fault(err).detail}"
@@ -216,9 +232,17 @@ class DashboardController:
         if self._thread is not None:
             self._thread.join(timeout=10)
         self._thread = None
-        if self.runtime is not None:
-            self.runtime.close()
+        try:
+            if self.runtime is not None:
+                self.runtime.close()     # a shared hardware service is not stopped here (the hub owns it)
+        finally:
             self.runtime = None
+            self._release_hub()
+
+    def _release_hub(self) -> None:
+        if self.hub is not None and self._hub_attached:
+            self.hub.release_ai()
+        self._hub_attached = False
 
     # ------------------------------------------------------- operator actions
 
@@ -238,6 +262,23 @@ class DashboardController:
         if outcome is not None:
             parts.append(outcome.detail)
         return "; ".join(parts)
+
+    @property
+    def hardware_console(self) -> HardwareConsole:
+        """Operator hardware controls on the running runtime's hardware service (same as the Hardware Demo)."""
+        return HardwareConsole(self.runtime.hardware if self.runtime is not None else None)
+
+    def hardware_command(self, action: str, by: str, target: str | None = None,
+                         params: dict[str, Any] | None = None, pin: str | None = None,
+                         confirmed: bool = True) -> str:
+        """Operator hardware action (estop, safe_stop, clear_estop, ping, request_status, set_motor, set_actuator,
+        connect, disconnect)."""
+        console = self.hardware_console
+        if action == "connect":
+            return console.connect(by)
+        if action == "disconnect":
+            return console.disconnect(by)
+        return console.command(action, by, target, params, pin=pin, confirmed=confirmed)
 
     def confirm_release(self, by: str) -> str:
         if self.runtime is None:

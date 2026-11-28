@@ -12,16 +12,21 @@ from pathlib import Path
 
 import streamlit as st
 
+from lifeguard.app import hardware_ui
 from lifeguard.app.dashboard_controller import (
     DashboardController,
     SourceChoice,
     annotate,
     clean_input,
+    hardware_badges,
     health_rows,
     track_rows,
 )
+from lifeguard.app.hardware_hub import shared_hub
+from lifeguard.app.hardware_view import hardware_state
 from lifeguard.app.runtime import Snapshot
 from lifeguard.contracts.enums import AckDecision, RiskLevel
+from lifeguard.hardware.models import HardwareStatus
 from lifeguard.system.alerts.service import Priority
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -29,8 +34,10 @@ REFRESH_S = 1.0
 
 
 @st.cache_resource
-def controller() -> DashboardController:
-    return DashboardController()
+def controller(shared: bool = False) -> DashboardController:
+    """One controller (one runtime) per Streamlit process. ``shared``: the two-page app, where the hardware
+    service belongs to the process-wide hub and is the same one the Hardware page shows."""
+    return DashboardController(hub=shared_hub() if shared else None)
 
 
 def sidebar(ctl: DashboardController) -> None:
@@ -90,9 +97,24 @@ def response_panel(ctl: DashboardController, snap: Snapshot) -> None:
             st.session_state["last_action"] = ctl.confirm_release(st.session_state.get("operator", ""))
 
 
+def hardware_panel(ctl: DashboardController, hw: HardwareStatus) -> None:
+    """ESP32 pool prototype: same service, panel and controls as the Hardware Demo window (compact)."""
+    st.subheader("Hardware")
+    show = {"info": st.info, "success": st.success, "warning": st.warning, "error": st.error}
+    for level, text in hardware_badges(hw):
+        show[level](text)
+    state = hardware_state(hw)
+    st.markdown(f"**Connection: {state.label}** - {state.detail}")
+    operator = st.session_state.get("operator", "")
+    hardware_ui.controls(ctl.hardware_console, hw, "hw", operator)
+    hardware_ui.details(hw, compact=True)
+    st.caption("Full hardware view: the Hardware page (same service)" if ctl.hub is not None else
+               "Full hardware window: `python -m streamlit run src/lifeguard/app/hardware_demo.py`")
+
+
 @st.fragment(run_every=REFRESH_S)
-def live_view() -> None:
-    ctl = controller()
+def live_view(shared: bool = False) -> None:
+    ctl = controller(shared)
     rt = ctl.runtime
     if rt is None:
         st.info("Not running. Choose an input in the sidebar and press Start.")
@@ -114,6 +136,8 @@ def live_view() -> None:
         response_panel(ctl, snap)
         st.subheader("Health")
         st.dataframe(health_rows(snap), hide_index=True, width="stretch")
+        if snap.hardware is not None:   # only when hardware.enabled is true in the system config
+            hardware_panel(ctl, snap.hardware)
     with st.expander("Notifications"):
         for note in reversed(snap.notifications[-50:]):
             st.write(f"`{note.priority.value}` {note.t_utc} {note.message}")
@@ -123,12 +147,18 @@ def live_view() -> None:
         st.json(snap.components)
 
 
-def main() -> None:
-    st.set_page_config(page_title="Pool lifeguard assistant", layout="wide")
+def page(shared: bool = False) -> None:
+    """The AI dashboard page (standalone script, or the "AI Dashboard" page of the two-page app)."""
     st.title("Pool lifeguard assistant")
     st.caption("Decision support only. It does not replace lifeguards. Drone response is simulation only.")
-    sidebar(controller())
-    live_view()
+    sidebar(controller(shared))
+    live_view(shared)
 
 
-main()
+def main() -> None:
+    st.set_page_config(page_title="Pool lifeguard assistant", layout="wide")
+    page()
+
+
+if __name__ == "__main__":      # ``streamlit run`` executes this file as __main__; importing it renders nothing
+    main()
