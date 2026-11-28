@@ -15,6 +15,7 @@ MODULES: tuple[str, ...] = (
     "lifeguard.system",
     "lifeguard.system.geometry",
     "lifeguard.robotics",
+    "lifeguard.hardware",
     "lifeguard.app",
 )
 
