@@ -1,0 +1,71 @@
+# ESP32 pool prototype - the ONLY file to edit when the team's hardware is delivered.
+# Used by the Hardware Demo window (src/lifeguard/app/hardware_demo.py) and by the AI dashboard when it runs with
+# configs/system_hardware.yaml. Full reference: docs/HARDWARE_INTEGRATION.md (sections 6 and 15).
+#
+#   AI only (no ESP32)      enabled: false              (or run the AI demo with configs/system.yaml)
+#   Simulated ESP32         enabled: true, mode: simulation   <- shipped default; labelled SIMULATION everywhere
+#   Real ESP32              enabled: true, mode: esp32, then fill in the esp32: section below
+#
+# There is NO network discovery: the device is found at the address configured here. Secrets never go in this
+# file: the token and the e-stop PIN are read from environment variables whose NAMES are configured here.
+hardware:
+  enabled: true
+  mode: simulation                 # "simulation" | "esp32"  (a failed esp32 link is NEVER replaced by simulation)
+  device_id: pool-prototype-01     # must equal DEVICE_ID in the firmware; checked in every hello
+  auto_connect: true               # open the link when the application starts (false: press Connect)
+  allow_physical_actuation: false  # esp32 mode: set_motor / set_actuator refused until true (stops always work)
+
+  # Timing (sent to the device in "welcome" where applicable)
+  telemetry_interval_s: 0.5
+  heartbeat_interval_s: 1.0
+  link_timeout_s: 3.0              # nothing heard for this long -> link lost, connection closed
+  hello_timeout_s: 2.0             # a connection without a valid hello is closed after this
+  stale_telemetry_s: 2.0           # older telemetry -> movement refused (and anything moving is safe-stopped)
+  command_timeout_s: 2.0           # no acknowledgement -> TIMEOUT
+
+  # Safety
+  emergency_stop_retries: 3        # re-sends of an unacknowledged e-stop ...
+  emergency_stop_retry_s: 0.5      # ... this often
+  safe_stop_on_connect: true       # every (re)connect: safe_stop (emergency_stop while the host latch is set)
+  safe_stop_on_shutdown: true
+  safe_stop_on_stale_telemetry: true
+  estop_clear:
+    operators: []                  # e.g. ["lifeguard_1", "supervisor"]; empty = any named operator
+    pin_env: null                  # e.g. LIFEGUARD_HW_CLEAR_PIN (name of an environment variable, never the PIN)
+
+  # Link to the ESP32 (only used in mode: esp32)
+  esp32:
+    protocol: websocket
+    role: server                   # server: this computer listens, the ESP32 connects to it (no ESP32 IP needed)
+                                   # client: this computer connects to the ESP32's WebSocket server (device_host)
+    # role: server
+    bind_host: 127.0.0.1           # PLACEHOLDER: this computer's LAN address (or 0.0.0.0) for a real ESP32
+    port: 8765                     # PLACEHOLDER: open it in the firewall for the local network only
+    allowed_peers: []              # e.g. ["192.168.4.20"]: only this ESP32 may take the device slot
+    # role: client
+    device_host: null              # PLACEHOLDER: the ESP32's IP address or host name, e.g. 192.168.4.20
+    device_port: 8765
+    reconnect:                     # client role: back-off between connection attempts
+      initial_backoff_s: 1.0
+      max_backoff_s: 30.0
+      multiplier: 2.0
+      max_attempts: 0              # 0 = keep trying (every <= max_backoff_s); N = give up, then press Connect
+    # both roles
+    path: /lifeguard-hw
+    auth_token_env: null           # e.g. LIFEGUARD_HW_TOKEN; required for physical actuation over a network
+    open_timeout_s: 3.0
+    close_timeout_s: 1.0
+    max_message_bytes: 16384
+
+  # Components: PLACEHOLDERS until the prototype design fixes real ids, limits and units.
+  components:
+    motors:
+      motor_1: {max_speed: 0.5, max_duration_s: 3.0, description: "placeholder motor channel"}
+    actuators:
+      indicator_1: {states: ["off", "on"], safe_state: "off", max_duration_s: 5.0, description: "placeholder"}
+    sensors:
+      sensor_1: {unit: null, sim_value: 1.0, description: "placeholder sensor (simulated value)"}
+      sensor_2: {unit: null, description: "placeholder sensor without a simulated value -> shown unavailable"}
+
+  on_dispatch: []                  # commands after a lifeguard-CONFIRMED dispatch (none by default)
+  command_log: null                # e.g. ../events/hardware_commands.jsonl (events/ is git-ignored)
